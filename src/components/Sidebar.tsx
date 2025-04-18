@@ -11,7 +11,8 @@ import {
   PhotoIcon, 
   Cog6ToothIcon,
   UsersIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 
 const merchantLinks = [
@@ -27,6 +28,7 @@ const adminLinks = [
   { href: '/admin/dashboard', label: 'Статистика', icon: ChartBarIcon },
   { href: '/admin/merchants', label: 'Мерчанты', icon: UsersIcon },
   { href: '/admin/applications', label: 'Заявки', icon: DocumentTextIcon },
+  { href: '/admin/banks', label: 'Банки', icon: BuildingOfficeIcon },
   { href: '/admin/settings', label: 'Настройки', icon: Cog6ToothIcon },
 ];
 
