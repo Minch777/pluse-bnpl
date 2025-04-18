@@ -4,7 +4,7 @@
   "private": true,
   "description": "Frontend interface for Pluse BNPL service - a payment installment platform for merchants",
   "scripts": {
-    "dev": "next dev --no-turbo",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

@@ -8,7 +8,7 @@ export default function MerchantSettings() {
   const [activeTab, setActiveTab] = useState('profile');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mt-8">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Настройки</h1>
         <p className="mt-2 text-slate-600">

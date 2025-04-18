@@ -113,7 +113,7 @@ export default function MerchantApplications() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mt-8">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Заявки</h1>
