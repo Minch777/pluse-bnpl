@@ -1,71 +1,58 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { 
+  HomeIcon, 
+  DocumentTextIcon, 
+  LinkIcon, 
+  DocumentCheckIcon, 
+  PhotoIcon, 
+  Cog6ToothIcon 
+} from '@heroicons/react/24/outline';
 
-type SidebarProps = {
-  userRole: 'MERCHANT' | 'ADMIN';
-};
+const merchantLinks = [
+  { href: '/merchant/dashboard', label: 'Показатели', icon: HomeIcon },
+  { href: '/merchant/applications', label: 'Заявки', icon: DocumentTextIcon },
+  { href: '/merchant/link', label: 'Ссылка', icon: LinkIcon },
+  { href: '/merchant/terms', label: 'Условия', icon: DocumentCheckIcon },
+  { href: '/merchant/materials', label: 'Материалы', icon: PhotoIcon },
+  { href: '/merchant/settings', label: 'Настройки', icon: Cog6ToothIcon },
+];
 
-export default function Sidebar({ userRole }: SidebarProps) {
+export default function Sidebar() {
   const pathname = usePathname();
-  
-  const merchantLinks = [
-    { href: '/merchant/dashboard', label: 'Главная' },
-    { href: '/merchant/applications', label: 'Заявки' },
-    { href: '/merchant/link', label: 'Ссылка' },
-    { href: '/merchant/terms', label: 'Условия' },
-    { href: '/merchant/materials', label: 'Материалы' },
-    { href: '/merchant/settings', label: 'Настройки' },
-  ];
-  
-  const adminLinks = [
-    { href: '/admin/dashboard', label: 'Дашборд' },
-    { href: '/admin/merchants', label: 'Предприниматели' },
-    { href: '/admin/applications', label: 'Заявки' },
-    { href: '/admin/terms', label: 'Условия' },
-  ];
-  
-  const links = userRole === 'MERCHANT' ? merchantLinks : adminLinks;
-  
+
   return (
-    <aside className="w-64 bg-white border-r border-slate-200 h-[calc(100vh-60px)] sticky top-[60px] overflow-y-auto">
-      <nav className="p-4">
-        <div className="space-y-1">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`block px-4 py-2.5 rounded-md transition-colors ${
-                pathname === link.href || pathname.startsWith(`${link.href}/`) ? 
-                'bg-blue-50 text-blue-600' : 
-                'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
+    <div className="hidden md:flex md:w-64 md:flex-col">
+      <div className="flex min-h-0 flex-1 flex-col border-r border-gray-200 bg-white">
+        <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
+          <nav className="mt-5 flex-1 space-y-1 bg-white px-2">
+            {merchantLinks.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
+                    isActive
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <item.icon
+                    className={`mr-3 h-5 w-5 flex-shrink-0 ${
+                      isActive ? 'text-gray-500' : 'text-gray-400 group-hover:text-gray-500'
+                    }`}
+                    aria-hidden="true"
+                  />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
         </div>
-        
-        {userRole === 'MERCHANT' && (
-          <div className="mt-8 pt-6 border-t border-slate-200">
-            <div className="rounded-md bg-blue-50 p-4">
-              <h3 className="text-sm font-medium text-blue-800">Нужна помощь?</h3>
-              <p className="mt-2 text-xs text-blue-700">
-                Если у вас возникли вопросы, обратитесь в нашу службу поддержки.
-              </p>
-              <a 
-                href="https://wa.me/77778244804" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 block text-sm text-center font-medium text-white bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-md transition-colors"
-              >
-                Связаться с поддержкой
-              </a>
-            </div>
-          </div>
-        )}
-      </nav>
-    </aside>
+      </div>
+    </div>
   );
 } 
