@@ -6,8 +6,18 @@ import Image from 'next/image';
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import MobileMenu from './MobileMenu';
 
-export default function Header() {
+type HeaderProps = {
+  userRole?: 'ADMIN' | 'MERCHANT';
+  userName?: string;
+};
+
+export default function Header({ userRole, userName }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const getHomeLink = () => {
+    if (userRole === 'ADMIN') return '/admin/dashboard';
+    return '/merchant/dashboard';
+  };
 
   return (
     <>
@@ -26,7 +36,7 @@ export default function Header() {
                 </button>
               </div>
               <div className="flex-1 flex justify-center md:justify-start">
-                <Link href="/merchant/dashboard" className="flex items-center">
+                <Link href={getHomeLink()} className="flex items-center">
                   <Image
                     src="/pluse-logo.png"
                     alt="Pluse"
@@ -39,7 +49,9 @@ export default function Header() {
               </div>
             </div>
             <div className="flex items-center">
-              {/* Здесь можно добавить другие элементы хедера, например, профиль пользователя */}
+              {userName && (
+                <span className="text-sm text-gray-700">{userName}</span>
+              )}
             </div>
           </div>
         </div>
