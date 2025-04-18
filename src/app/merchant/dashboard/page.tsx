@@ -240,9 +240,9 @@ export default function MerchantDashboard() {
             <span>Показаны последние {recentApplications.length} из {metrics.applications.value} заявок</span>
             <button
               onClick={() => router.push('/merchant/applications')}
-              className="text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md px-3 py-1.5"
+              className="text-sm text-gray-700 hover:text-gray-900 border border-gray-300 hover:bg-gray-50 rounded-md px-3 py-1.5"
             >
-              Смотреть все заявки →
+              Смотреть все заявки
             </button>
           </div>
         </div>
