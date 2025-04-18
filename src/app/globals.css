@@ -10,6 +10,7 @@
   --muted: #f3f4f6;
   --muted-foreground: #6b7280;
   --border: #e5e7eb;
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -27,19 +28,19 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: system-ui, sans-serif;
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors;
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors;
   }
   
   .btn-secondary {
-    @apply bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors;
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors;
   }
   
   .card {
-    @apply bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow p-4;
+    @apply bg-white rounded-lg border border-slate-200 shadow p-4;
   }
 }

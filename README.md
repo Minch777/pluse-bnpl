@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pluse BNPL
 
-## Getting Started
+Pluse BNPL (Buy Now, Pay Later) - современная платформа рассрочки для предпринимателей.
 
-First, run the development server:
+## О проекте
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Данный проект представляет собой frontend-интерфейс для сервиса Pluse BNPL, который позволяет предпринимателям предлагать своим клиентам рассрочку платежей. Реализовано на Next.js с использованием Tailwind CSS.
+
+### Роли пользователей
+
+1. **MERCHANT (Предприниматель)** - авторизованный пользователь с доступом к личному кабинету, где можно управлять заявками на рассрочку и отслеживать статистику.
+2. **ADMIN (Администратор)** - пользователь с расширенными правами для управления всей платформой, контроля предпринимателей и заявок.
+3. **CLIENT (Клиент)** - анонимный пользователь, который может заполнить заявку на рассрочку по специальной ссылке.
+
+## Технологии
+
+- Next.js
+- TypeScript
+- Tailwind CSS
+- React
+
+## Запуск проекта
+
+### Требования
+
+- Node.js 18+ 
+- npm или yarn
+
+### Установка и запуск
+
+1. Клонировать репозиторий:
+   ```
+   git clone https://github.com/your-username/pluse-bnpl.git
+   cd pluse-bnpl
+   ```
+
+2. Установить зависимости:
+   ```
+   npm install
+   # или
+   yarn install
+   ```
+
+3. Запустить в режиме разработки:
+   ```
+   npm run dev
+   # или
+   yarn dev
+   ```
+
+4. Открыть [http://localhost:3000](http://localhost:3000) в браузере
+
+### Сборка для продакшена
+
+```
+npm run build
+npm run start
+# или
+yarn build
+yarn start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Структура проекта
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+src/
+  ├── app/
+  │   ├── admin/           # Админ-панель
+  │   ├── merchant/        # Интерфейс предпринимателя
+  │   ├── auth/            # Страницы авторизации
+  │   ├── apply/           # Форма заявки для клиентов
+  │   └── page.tsx         # Главная страница
+  ├── components/          # Переиспользуемые компоненты
+  ├── contexts/            # React контексты
+  ├── lib/                 # Утилиты и хелперы
+  └── types/               # TypeScript типы
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Демо-доступ
 
-## Learn More
+### Merchant (Предприниматель)
+- Email: merchant@example.com
+- Password: password
 
-To learn more about Next.js, take a look at the following resources:
+### Admin (Администратор)
+- Email: admin@example.com
+- Password: password
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Ссылки для клиентов
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Форма заявки для клиентов доступна по адресу:
+- `/apply/[merchant-slug]`
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Например: `/apply/store123`
