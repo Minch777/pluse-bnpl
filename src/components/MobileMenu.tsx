@@ -56,62 +56,52 @@ export default function MobileMenu({ open, onClose }: MobileMenuProps) {
             leaveFrom="translate-x-0"
             leaveTo="-translate-x-full"
           >
-            <Dialog.Panel className="relative mr-16 flex w-full max-w-xs flex-1">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-in-out duration-300"
-                enterFrom="opacity-0"
-                enterTo="opacity-100"
-                leave="ease-in-out duration-300"
-                leaveFrom="opacity-100"
-                leaveTo="opacity-0"
-              >
-                <div className="absolute left-full top-0 flex w-16 justify-center pt-5">
-                  <button type="button" className="-m-2.5 p-2.5" onClick={onClose}>
-                    <span className="sr-only">Закрыть меню</span>
-                    <XMarkIcon className="h-6 w-6 text-gray-900" aria-hidden="true" />
-                  </button>
+            <Dialog.Panel className="relative w-full">
+              <div className="flex h-full flex-col overflow-y-auto bg-white py-6 shadow-xl">
+                <div className="px-4 sm:px-6">
+                  <div className="flex items-center justify-between">
+                    <Dialog.Title className="text-base font-semibold leading-6 text-gray-900">
+                      Меню
+                    </Dialog.Title>
+                    <div className="ml-3 flex h-7 items-center">
+                      <button
+                        type="button"
+                        className="relative rounded-md bg-white text-gray-400 hover:text-gray-500"
+                        onClick={onClose}
+                      >
+                        <span className="sr-only">Закрыть меню</span>
+                        <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </Transition.Child>
-              <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4">
-                <div className="flex h-16 shrink-0 items-center">
-                  <button type="button" className="-m-2.5 p-2.5" onClick={onClose}>
-                    <span className="sr-only">Закрыть меню</span>
-                    <XMarkIcon className="h-6 w-6 text-gray-900" aria-hidden="true" />
-                  </button>
+                <div className="relative mt-6 flex-1 px-4 sm:px-6">
+                  <nav className="space-y-1">
+                    {merchantLinks.map((item) => {
+                      const isActive = pathname === item.href;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={`group flex items-center px-3 py-3 text-base font-medium rounded-md ${
+                            isActive
+                              ? 'bg-gray-100 text-gray-900'
+                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          }`}
+                          onClick={onClose}
+                        >
+                          <item.icon
+                            className={`mr-4 h-6 w-6 flex-shrink-0 ${
+                              isActive ? 'text-gray-500' : 'text-gray-400 group-hover:text-gray-500'
+                            }`}
+                            aria-hidden="true"
+                          />
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </nav>
                 </div>
-                <nav className="flex flex-1 flex-col">
-                  <ul role="list" className="flex flex-1 flex-col gap-y-7">
-                    <li>
-                      <ul role="list" className="-mx-2 space-y-1">
-                        {merchantLinks.map((item) => {
-                          const isActive = pathname === item.href;
-                          return (
-                            <li key={item.href}>
-                              <Link
-                                href={item.href}
-                                className={`group flex gap-x-3 rounded-md p-2 text-sm leading-6 ${
-                                  isActive
-                                    ? 'bg-gray-50 text-blue-600'
-                                    : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
-                                }`}
-                                onClick={onClose}
-                              >
-                                <item.icon
-                                  className={`h-6 w-6 shrink-0 ${
-                                    isActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'
-                                  }`}
-                                  aria-hidden="true"
-                                />
-                                {item.label}
-                              </Link>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </li>
-                  </ul>
-                </nav>
               </div>
             </Dialog.Panel>
           </Transition.Child>

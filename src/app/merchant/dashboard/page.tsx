@@ -50,7 +50,7 @@ export default function MerchantDashboard() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mt-8">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Показатели</h1>
         <p className="mt-2 text-gray-600">

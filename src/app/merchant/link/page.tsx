@@ -181,13 +181,13 @@ export default function MerchantLink() {
   };
   
   return (
-    <div className="max-w-6xl mx-auto px-4 space-y-8">
+    <div className="space-y-6 mt-8">
       {/* Заголовок страницы */}
-      <div className="text-center max-w-3xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 mb-3">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">
           Поделитесь с клиентом — он заполнит заявку сам
         </h1>
-        <p className="text-base text-gray-600">
+        <p className="mt-2 text-gray-600">
           Скопируйте ссылку или покажите QR-код. Клиент сам заполнит форму, а вы сразу увидите заявку у себя.
         </p>
       </div>
