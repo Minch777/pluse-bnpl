@@ -1,0 +1,11 @@
+{
+  "/page": "app/page.js",
+  "/apply/[slug]/page": "app/apply/[slug]/page.js",
+  "/auth/login/page": "app/auth/login/page.js",
+  "/merchant/dashboard/page": "app/merchant/dashboard/page.js",
+  "/merchant/applications/page": "app/merchant/applications/page.js",
+  "/merchant/link/page": "app/merchant/link/page.js",
+  "/merchant/terms/page": "app/merchant/terms/page.js",
+  "/merchant/materials/page": "app/merchant/materials/page.js",
+  "/merchant/settings/page": "app/merchant/settings/page.js"
+}
