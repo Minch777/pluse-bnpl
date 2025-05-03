@@ -48,3 +48,6 @@ next-env.d.ts
 # Cursor specific
 .cursor
 .cursor/
+
+node_modules/
+frontend/node_modules/
