@@ -9,16 +9,16 @@ import {
   LinkIcon, 
   DocumentCheckIcon, 
   PhotoIcon, 
-  Cog6ToothIcon 
+  Cog6ToothIcon,
+  BanknotesIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const merchantLinks = [
-  { href: '/merchant/dashboard', label: 'Показатели', icon: HomeIcon },
-  { href: '/merchant/applications', label: 'Заявки', icon: DocumentTextIcon },
+  { href: '/merchant/dashboard', label: 'Заявки', icon: DocumentTextIcon },
   { href: '/merchant/link', label: 'Ссылка', icon: LinkIcon },
-  { href: '/merchant/terms', label: 'Условия', icon: DocumentCheckIcon },
+  { href: '/merchant/terms', label: 'Банки', icon: BanknotesIcon },
   { href: '/merchant/materials', label: 'Материалы', icon: PhotoIcon },
   { href: '/merchant/settings', label: 'Настройки', icon: Cog6ToothIcon },
 ];

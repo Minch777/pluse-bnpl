@@ -3,9 +3,15 @@ module.exports = {
   content: [
     './src/**/*.{js,ts,jsx,tsx,mdx}',
   ],
-  darkMode: false,
+  darkMode: 'class',
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        primary: '#8335ff',
+        'primary-hover': '#7128f3',
+        'primary-light': '#f6efff',
+      },
+    },
   },
   plugins: [],
 } 

@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { 
   ChevronDownIcon,
   CalendarIcon,
   MapPinIcon,
   FolderIcon,
-  PlusIcon
+  PlusIcon,
+  FunnelIcon
 } from '@heroicons/react/24/outline';
+import { SidebarContext } from '@/app/merchant/layout';
 
 type ApplicationStatus = 'pending' | 'approved' | 'rejected';
 type Period = 'today' | 'week' | 'month' | 'all';
@@ -62,6 +64,8 @@ export default function MerchantApplications() {
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('week');
   const [isStoreDropdownOpen, setIsStoreDropdownOpen] = useState(false);
   const [isPeriodDropdownOpen, setIsPeriodDropdownOpen] = useState(false);
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
+  const { isMobile } = useContext(SidebarContext);
   
   // Filter applications based on selected store
   const filteredApplications = selectedStore === 'all'
@@ -80,11 +84,11 @@ export default function MerchantApplications() {
     const baseClasses = 'inline-flex items-center px-2 py-1 text-xs font-medium rounded-full';
     switch (status) {
       case 'approved':
-        return `${baseClasses} bg-green-100 text-green-700`;
+        return `${baseClasses} bg-[#F5F5F7] text-green-700`;
       case 'rejected':
-        return `${baseClasses} bg-red-100 text-red-700`;
+        return `${baseClasses} bg-[#F5F5F7] text-red-700`;
       default:
-        return `${baseClasses} bg-yellow-100 text-yellow-700`;
+        return `${baseClasses} bg-[#F5F5F7] text-yellow-700`;
     }
   };
 
@@ -115,37 +119,56 @@ export default function MerchantApplications() {
   return (
     <div className="space-y-6 mt-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Заявки</h1>
-        <p className="text-base text-gray-600">
+      <header className="pb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Заявки</h1>
+        <p className="mt-2 text-lg text-gray-600">
           Все заявки на рассрочку
         </p>
-      </div>
+      </header>
 
-      {/* Actions Panel */}
-      <div className="flex items-center justify-between">
+      {/* Primary action row */}
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+        {/* Create application button */}
         <button 
           onClick={() => router.push('/apply/store123')}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 inline-flex items-center gap-2"
+          className="w-full sm:w-auto border-2 border-[#8335ff] text-[#8335ff] px-4 py-2 rounded-md text-sm hover:bg-[#f6efff] inline-flex items-center justify-center sm:justify-start gap-2 transition-all"
         >
           <PlusIcon className="h-4 w-4" />
           Подать заявку
         </button>
 
-        <div className="flex items-center gap-3">
+        {/* Filter toggle on mobile */}
+        {isMobile && (
+          <button
+            onClick={() => setIsFilterExpanded(!isFilterExpanded)}
+            className="w-full bg-white border border-gray-300 px-4 py-2 rounded-md text-sm hover:bg-gray-50 inline-flex items-center justify-center gap-2"
+          >
+            <FunnelIcon className="h-4 w-4 text-gray-500" />
+            Фильтры
+          </button>
+        )}
+      </div>
+
+      {/* Filters - Two-row layout */}
+      <div className={`space-y-3 ${isMobile && !isFilterExpanded ? 'hidden' : 'block'}`}>
+        <div className="grid grid-cols-2 gap-2">
           {/* Store Filter */}
           <div className="relative">
             <button
               onClick={() => setIsStoreDropdownOpen(!isStoreDropdownOpen)}
-              className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-md border border-gray-300 hover:bg-gray-50"
+              className="w-full inline-flex items-center justify-between gap-2 text-sm px-3 py-1.5 rounded-md border border-gray-300 hover:bg-gray-50"
             >
-              <MapPinIcon className="h-4 w-4 text-gray-400" />
+              <div className="flex items-center gap-2 truncate">
+                <MapPinIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <span className="truncate">
               {selectedStore === 'all' ? 'Все точки' : mockStores.find(s => s.id === selectedStore)?.name}
-              <ChevronDownIcon className="h-4 w-4 text-gray-400" />
+                </span>
+              </div>
+              <ChevronDownIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
             </button>
 
             {isStoreDropdownOpen && (
-              <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+              <div className="absolute left-0 right-0 mt-1 bg-white rounded-md shadow-lg border border-gray-200 z-10">
                 <div className="py-1">
                   <button
                     onClick={() => {
@@ -177,15 +200,17 @@ export default function MerchantApplications() {
           <div className="relative">
             <button
               onClick={() => setIsPeriodDropdownOpen(!isPeriodDropdownOpen)}
-              className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-md border border-gray-300 hover:bg-gray-50"
+              className="w-full inline-flex items-center justify-between gap-2 text-sm px-3 py-1.5 rounded-md border border-gray-300 hover:bg-gray-50"
             >
-              <CalendarIcon className="h-4 w-4 text-gray-400" />
-              {getPeriodText(selectedPeriod)}
-              <ChevronDownIcon className="h-4 w-4 text-gray-400" />
+              <div className="flex items-center gap-2 truncate">
+                <CalendarIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <span className="truncate">{getPeriodText(selectedPeriod)}</span>
+              </div>
+              <ChevronDownIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
             </button>
 
             {isPeriodDropdownOpen && (
-              <div className="absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+              <div className="absolute left-0 right-0 mt-1 bg-white rounded-md shadow-lg border border-gray-200 z-10">
                 <div className="py-1">
                   {(['today', 'week', 'month', 'all'] as Period[]).map((period) => (
                     <button
@@ -203,18 +228,47 @@ export default function MerchantApplications() {
               </div>
             )}
           </div>
+          </div>
 
           {/* Export Button */}
-          <button className="inline-flex items-center gap-2 bg-white border px-4 py-1.5 rounded-md text-sm hover:bg-gray-50">
+        <button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white border px-4 py-1.5 rounded-md text-sm hover:bg-gray-50">
             <FolderIcon className="h-4 w-4 text-gray-400" />
             Выгрузить
           </button>
-        </div>
       </div>
 
-      {/* Applications Table */}
+      {/* Applications - Table for Desktop, Cards for Mobile */}
       {filteredApplications.length > 0 ? (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div>
+          {/* Mobile: Card View */}
+          <div className="md:hidden space-y-4">
+            {filteredApplications.map((application) => (
+              <div key={application.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <h3 className="font-medium text-gray-900">{application.customerName}</h3>
+                    <p className="text-sm text-gray-500">{formatDate(application.date)}</p>
+                  </div>
+                  <span className={getStatusBadgeClasses(application.status)}>
+                    {getStatusText(application.status)}
+                  </span>
+                </div>
+                <div className="flex flex-col space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Сумма:</span>
+                    <span className="text-sm font-medium">{formatAmount(application.amount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Точка продаж:</span>
+                    <span className="text-sm">{application.storeName}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: Table View */}
+          <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200">
@@ -241,6 +295,7 @@ export default function MerchantApplications() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       ) : (
         <div className="text-center py-12">

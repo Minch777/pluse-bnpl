@@ -91,23 +91,30 @@ export default function ApplicationForm() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50">
-      <div className="w-full max-w-[520px]">
-        <div className="text-center mb-10">
-          <h1 className="text-2xl font-bold text-gray-900">
+      <div className="w-full max-w-[560px]">
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center mb-4">
+            <div className="h-12 w-12 bg-sky-50 rounded-full flex items-center justify-center">
+              <BuildingStorefrontIcon className="h-6 w-6 text-sky-600" />
+            </div>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Рассрочка от {merchantName}
           </h1>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="text-lg text-gray-600">
             Подача заявки займёт не больше 2 минут
           </p>
         </div>
         
-        <div className="bg-white rounded-lg shadow-md p-8 border border-gray-200">
+        <div className="bg-white rounded-xl shadow-sm p-8 border border-gray-200">
           <form onSubmit={handleSubmit}>
             {step === 1 && (
               <div className="space-y-8">
                 <div>
-                  <span className="text-sm text-gray-500">Шаг 1 из 2</span>
-                  <h2 className="text-xl font-semibold text-gray-900 mt-1">Выберите параметры рассрочки</h2>
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-sky-100 text-sky-700">
+                    Шаг 1 из 2
+                  </span>
+                  <h2 className="text-xl font-semibold text-gray-900 mt-2">Выберите параметры рассрочки</h2>
                 </div>
 
                 <div>
@@ -118,10 +125,10 @@ export default function ApplicationForm() {
                     <button
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, productType: 'credit' }))}
-                      className={`px-4 py-2.5 rounded-md text-sm font-medium ${
+                      className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                         formData.productType === 'credit'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? 'bg-sky-600 text-white'
+                          : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
                       }`}
                     >
                       Кредитование
@@ -129,10 +136,10 @@ export default function ApplicationForm() {
                     <button
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, productType: 'installment' }))}
-                      className={`px-4 py-2.5 rounded-md text-sm font-medium ${
+                      className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                         formData.productType === 'installment'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? 'bg-sky-600 text-white'
+                          : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
                       }`}
                     >
                       Рассрочка
@@ -150,10 +157,10 @@ export default function ApplicationForm() {
                         key={term}
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, term }))}
-                        className={`px-4 py-2.5 rounded-md text-sm font-medium ${
+                        className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                           formData.term === term
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            ? 'bg-sky-600 text-white'
+                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
                         }`}
                       >
                         {term}
@@ -163,7 +170,7 @@ export default function ApplicationForm() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Сумма рассрочки *
                   </label>
                   <input
@@ -174,13 +181,13 @@ export default function ApplicationForm() {
                     value={formData.amount}
                     onChange={handleChange}
                     placeholder="Введите сумму"
-                    className="w-full px-3 py-2.5 text-gray-900 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full px-3 py-2.5 text-gray-900 border border-gray-300 rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Предпочтительная дата платежа *
                   </label>
                   <input
@@ -193,14 +200,14 @@ export default function ApplicationForm() {
                     min="1"
                     max="28"
                     placeholder="Например, 10"
-                    className="w-full px-3 py-2.5 text-gray-900 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full px-3 py-2.5 text-gray-900 border border-gray-300 rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     required
                   />
                 </div>
 
-                <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:border-blue-200 hover:bg-blue-100">
+                <div className="bg-sky-50 border border-sky-100 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:bg-sky-100">
                   <div className="flex items-start">
-                    <BuildingStorefrontIcon className="h-5 w-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+                    <BuildingStorefrontIcon className="h-5 w-5 text-sky-600 mt-0.5 mr-3 flex-shrink-0" />
                     <div>
                       <p className="text-sm text-gray-700">
                         Вы оформляете заявку для «{merchantName}».
@@ -217,8 +224,10 @@ export default function ApplicationForm() {
             {step === 2 && (
               <div className="space-y-6">
                 <div>
-                  <span className="text-sm text-gray-500">Шаг 2 из 2</span>
-                  <h2 className="text-xl font-semibold text-gray-900 mt-1">Данные клиента</h2>
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-sky-100 text-sky-700">
+                    Шаг 2 из 2
+                  </span>
+                  <h2 className="text-xl font-semibold text-gray-900 mt-2">Данные клиента</h2>
                 </div>
 
                 <div className="space-y-4">
@@ -231,7 +240,7 @@ export default function ApplicationForm() {
                       name="lastName"
                       value={formData.lastName}
                       onChange={handleChange}
-                      className="w-full min-h-[44px] px-3 py-2 text-[#1A1A1A] border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-500"
+                      className="w-full min-h-[44px] px-3 py-2 text-gray-900 border border-gray-300 rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 placeholder-gray-500"
                       required
                     />
                   </div>
@@ -244,7 +253,7 @@ export default function ApplicationForm() {
                       name="firstName"
                       value={formData.firstName}
                       onChange={handleChange}
-                      className="w-full min-h-[44px] px-3 py-2 text-[#1A1A1A] border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-500"
+                      className="w-full min-h-[44px] px-3 py-2 text-gray-900 border border-gray-300 rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 placeholder-gray-500"
                       required
                     />
                   </div>
@@ -257,7 +266,7 @@ export default function ApplicationForm() {
                       name="patronymic"
                       value={formData.patronymic}
                       onChange={handleChange}
-                      className="w-full min-h-[44px] px-3 py-2 text-[#1A1A1A] border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-500"
+                      className="w-full min-h-[44px] px-3 py-2 text-gray-900 border border-gray-300 rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 placeholder-gray-500"
                     />
                   </div>
                 </div>
@@ -273,7 +282,7 @@ export default function ApplicationForm() {
                     onChange={handleChange}
                     maxLength={12}
                     placeholder="12 цифр"
-                    className="w-full min-h-[44px] px-3 py-2 text-[#1A1A1A] border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-500"
+                    className="w-full min-h-[44px] px-3 py-2 text-gray-900 border border-gray-300 rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 placeholder-gray-500"
                     required
                   />
                 </div>
@@ -288,13 +297,13 @@ export default function ApplicationForm() {
                     value={formData.phone}
                     onChange={handleChange}
                     placeholder="+7 XXX XXX XX XX"
-                    className="w-full min-h-[44px] px-3 py-2 text-[#1A1A1A] border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-500"
+                    className="w-full min-h-[44px] px-3 py-2 text-gray-900 border border-gray-300 rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 placeholder-gray-500"
                     required
                   />
                 </div>
 
                 <div className="mt-8">
-                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Зарплата в месяц *
                   </label>
                   <input
@@ -305,7 +314,7 @@ export default function ApplicationForm() {
                     value={formData.monthlyIncome}
                     onChange={handleChange}
                     placeholder="Введите сумму"
-                    className="w-full min-h-[44px] px-3 py-2 text-gray-900 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full min-h-[44px] px-3 py-2 text-gray-900 border border-gray-300 rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     required
                   />
                 </div>
@@ -318,10 +327,10 @@ export default function ApplicationForm() {
                     <button
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, bankStatement: 'kaspi' }))}
-                      className={`min-h-[44px] px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      className={`min-h-[44px] px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                         formData.bankStatement === 'kaspi'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? 'bg-sky-600 text-white'
+                          : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
                       }`}
                     >
                       Kaspi
@@ -329,10 +338,10 @@ export default function ApplicationForm() {
                     <button
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, bankStatement: 'halyk' }))}
-                      className={`min-h-[44px] px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      className={`min-h-[44px] px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                         formData.bankStatement === 'halyk'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? 'bg-sky-600 text-white'
+                          : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
                       }`}
                     >
                       Halyk
@@ -348,13 +357,13 @@ export default function ApplicationForm() {
                       />
                       <label
                         htmlFor="bankStatement"
-                        className="cursor-pointer text-blue-600 hover:text-blue-800"
+                        className="cursor-pointer text-sky-600 hover:text-sky-800"
                       >
                         Загрузить выписку
                       </label>
                     </div>
                   ) : (
-                    <p className="text-xs text-[#888] mt-3">
+                    <p className="text-xs text-gray-500 mt-3">
                       Чтобы загрузить выписку, заполните поле ИИН
                     </p>
                   )}
@@ -368,12 +377,12 @@ export default function ApplicationForm() {
                       type="checkbox"
                       checked={formData.agreement}
                       onChange={handleChange}
-                      className="h-5 w-5 text-blue-600 rounded border-2 border-gray-400 focus:ring-blue-500"
+                      className="h-5 w-5 text-sky-600 rounded border-2 border-gray-400 focus:ring-sky-500"
                       required
                     />
                   </div>
                   <label htmlFor="agreement" className="ml-3 block text-sm text-gray-600">
-                    Я соглашаюсь с <a href="#" className="text-blue-600 hover:underline">условиями предоставления рассрочки</a> и даю согласие на обработку моих персональных данных
+                    Я соглашаюсь с <a href="#" className="text-sky-600 hover:underline">условиями предоставления рассрочки</a> и даю согласие на обработку моих персональных данных
                   </label>
                 </div>
               </div>
@@ -381,14 +390,16 @@ export default function ApplicationForm() {
 
             <div className="mt-8 flex flex-col gap-4">
               {step === 2 && (
-                <Button 
+                <button 
                   type="submit"
-                  isLoading={isSubmitting}
                   disabled={isSubmitting || !validateStep2()}
-                  className="w-full h-[52px] font-semibold text-base"
+                  className={`w-full h-[52px] px-5 py-3 rounded-lg font-medium text-white bg-sky-600 hover:bg-sky-700 transition-colors flex items-center justify-center disabled:opacity-50 disabled:pointer-events-none ${isSubmitting ? 'cursor-wait' : ''}`}
                 >
+                  {isSubmitting && (
+                    <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  )}
                   Отправить заявку на рассмотрение
-                </Button>
+                </button>
               )}
               
               {step === 2 && (
@@ -402,15 +413,15 @@ export default function ApplicationForm() {
               )}
               
               {step === 1 && (
-                <Button 
+                <button 
                   type="button"
                   onClick={nextStep}
                   disabled={!validateStep1()}
-                  className="w-full h-[52px] text-base group transition-colors duration-200 hover:bg-blue-700"
+                  className="w-full h-[52px] px-5 py-3 rounded-lg font-medium text-white bg-sky-600 hover:bg-sky-700 transition-colors flex items-center justify-center disabled:opacity-50 disabled:pointer-events-none group"
                 >
-                  Перейти к заполнению данных клиента
+                  <span>Перейти к заполнению данных клиента</span>
                   <span className="inline-block ml-2 group-hover:translate-x-0.5 transition-transform duration-200">→</span>
-                </Button>
+                </button>
               )}
             </div>
           </form>

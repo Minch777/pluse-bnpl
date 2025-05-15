@@ -4,6 +4,50 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
+import { 
+  UsersIcon, 
+  MagnifyingGlassIcon, 
+  FunnelIcon, 
+  CheckCircleIcon, 
+  XCircleIcon,
+  ClockIcon,
+  MapPinIcon,
+  EnvelopeIcon,
+  PhoneIcon,
+  ArrowPathIcon,
+  EyeIcon,
+  ShieldExclamationIcon,
+  CalendarDaysIcon,
+  BuildingOfficeIcon,
+  PlusIcon,
+  ArrowsUpDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  EllipsisHorizontalIcon,
+  BanknotesIcon,
+  ArrowUpIcon
+} from '@heroicons/react/24/outline';
+
+// Modern color palette - matching merchant dashboard
+const colors = {
+  primary: '#0891B2', // teal-600
+  primaryDark: '#0E7490', // teal-700
+  primaryLight: '#E0F2FE', // sky-100
+  secondary: '#0EA5E9', // sky-500
+  secondaryDark: '#0284C7', // sky-600
+  gradient: {
+    from: '#0EA5E9', // sky-500
+    to: '#0891B2', // teal-600
+  },
+  success: '#10B981', // emerald-500
+  error: '#EF4444', // red-500
+  neutral: '#F1F5F9', // slate-100
+  text: {
+    primary: '#0F172A', // slate-900
+    secondary: '#475569', // slate-600
+    tertiary: '#94A3B8' // slate-400
+  }
+};
 
 // Merchant status types
 type MerchantStatus = 'Активен' | 'На модерации' | 'Заблокирован';
@@ -20,6 +64,39 @@ type Merchant = {
   applications: number;
   joinDate: string;
 };
+
+// Stat Card component - matches merchant dashboard style
+function StatCard({ 
+  title, 
+  value, 
+  icon, 
+  highlight = false 
+}: { 
+  title: string; 
+  value: string | number; 
+  icon: React.ReactNode;
+  highlight?: boolean;
+}) {
+  return (
+    <div className={`rounded-lg border p-6 transition-all duration-150 shadow-sm
+      ${highlight 
+        ? 'bg-gradient-to-br from-sky-50 to-sky-100/70 border-sky-100 hover:shadow-md' 
+        : 'bg-white border-slate-200 hover:border-sky-200 hover:shadow-md'
+      }`
+    }>
+      <div className="flex items-center gap-3 mb-4">
+        <div className={`p-2 rounded-lg ${highlight ? 'bg-sky-100 text-sky-600' : 'bg-slate-50 text-slate-500'}`}>
+          {icon}
+        </div>
+        <span className="text-sm font-medium text-slate-600">{title}</span>
+      </div>
+      
+      <div className="flex items-baseline gap-2">
+        <h3 className={`text-[28px] font-bold text-slate-800`}>{value}</h3>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminMerchants() {
   // Mock merchants data
@@ -92,10 +169,21 @@ export default function AdminMerchants() {
     },
   ];
   
+  // Summary statistics
+  const statistics = {
+    total: mockMerchants.length,
+    active: mockMerchants.filter(m => m.status === 'Активен').length,
+    pending: mockMerchants.filter(m => m.status === 'На модерации').length,
+    blocked: mockMerchants.filter(m => m.status === 'Заблокирован').length,
+    totalApplications: mockMerchants.reduce((sum, m) => sum + m.applications, 0)
+  };
+  
   // Filter states
   const [statusFilter, setStatusFilter] = useState<MerchantStatus | 'Все'>('Все');
   const [locationFilter, setLocationFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [viewType, setViewType] = useState<'grid' | 'table'>('grid');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Get unique locations for filter dropdown
   const locations = Array.from(new Set(mockMerchants.map(merchant => merchant.location)));
@@ -120,148 +208,366 @@ export default function AdminMerchants() {
     return true;
   });
   
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    // Simulate data refresh
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setIsRefreshing(false);
+  };
+  
+  // Format date to be more readable
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }).format(date);
+  };
+  
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Предприниматели</h1>
-          <p className="mt-1 text-slate-500 dark:text-slate-400">
-            Управление партнерами на платформе
+    <div className="space-y-6 animate-fadeIn pb-12">
+      {/* Header section */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-slate-800 mb-2">
+          Предприниматели
+        </h1>
+        <p className="text-lg text-gray-600">
+            Управление партнерами платформы и анализ их активности
           </p>
+      </div>
+
+      {/* Stats cards with clean design */}
+      <div className="mb-8">
+        {/* Grid of metric cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <StatCard 
+            title="Всего предпринимателей"
+            value={statistics.total}
+            icon={<UsersIcon className="w-5 h-5" />}
+          />
+          
+          <StatCard 
+            title="Активные предприниматели"
+            value={statistics.active}
+            icon={<CheckCircleIcon className="w-5 h-5" />}
+            highlight={true}
+          />
+          
+          <StatCard 
+            title="На модерации"
+            value={statistics.pending}
+            icon={<ClockIcon className="w-5 h-5" />}
+          />
+          
+          <StatCard 
+            title="Заблокированные"
+            value={statistics.blocked}
+            icon={<XCircleIcon className="w-5 h-5" />}
+          />
+          </div>
         </div>
         
-        <Button>Добавить предпринимателя</Button>
+      {/* Merchants list section */}
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-6 border-b border-slate-200">
+          <div className="flex items-center gap-3 mb-4 sm:mb-0">
+            <h2 className="text-xl font-semibold text-slate-800">Список предпринимателей</h2>
+            <span className="text-sm text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg">
+              Всего: {statistics.total}
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={handleRefresh}
+              className="flex items-center gap-2 px-4 h-10 bg-transparent border border-sky-500 text-sky-600 rounded-lg text-sm font-medium hover:bg-sky-50 transition-colors"
+            >
+              <ArrowPathIcon className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>Обновить</span>
+            </button>
+            
+            <button 
+              className="flex items-center gap-2 px-4 h-10 bg-sky-600 text-white rounded-lg text-sm font-medium hover:bg-sky-700 transition-colors"
+            >
+              <PlusIcon className="w-5 h-5" />
+              <span>Добавить</span>
+            </button>
+          </div>
+        </div>
+        
+        {/* Filters */}
+        <div className="p-6 border-b border-slate-200">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex-1 relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MagnifyingGlassIcon className="w-5 h-5 text-slate-400" />
       </div>
-      
-      <Card>
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="flex-1">
-            <label htmlFor="search" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Поиск
-            </label>
             <input
-              id="search"
               type="text"
               placeholder="Поиск по имени, ID или email"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                className="w-full pl-10 pr-3 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500"
             />
           </div>
           
-          <div>
-            <label htmlFor="status" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Статус
-            </label>
+          <div className="flex flex-wrap gap-3">
+            <div className="relative">
             <select
-              id="status"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                  className="appearance-none pl-3 pr-8 py-2 border border-slate-200 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500"
             >
               <option value="Все">Все статусы</option>
               <option value="Активен">Активен</option>
               <option value="На модерации">На модерации</option>
               <option value="Заблокирован">Заблокирован</option>
             </select>
+                <FunnelIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
           
-          <div>
-            <label htmlFor="location" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Город
-            </label>
+            <div className="relative">
             <select
-              id="location"
               value={locationFilter}
               onChange={(e) => setLocationFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                  className="appearance-none pl-3 pr-8 py-2 border border-slate-200 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500"
             >
               <option value="">Все города</option>
               {locations.map((location) => (
                 <option key={location} value={location}>{location}</option>
               ))}
             </select>
+                <MapPinIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            </div>
+            
+            <div className="flex">
+              <button 
+                onClick={() => setViewType('grid')} 
+                  className={`px-3 py-2 border rounded-l-lg transition-colors ${
+                  viewType === 'grid' 
+                      ? 'bg-sky-600 border-sky-600 text-white' 
+                      : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                }`}
+                  title="Сетка"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="3" y="3" width="7" height="7" rx="1" fill="currentColor"/>
+                  <rect x="14" y="3" width="7" height="7" rx="1" fill="currentColor"/>
+                  <rect x="3" y="14" width="7" height="7" rx="1" fill="currentColor"/>
+                  <rect x="14" y="14" width="7" height="7" rx="1" fill="currentColor"/>
+                </svg>
+              </button>
+              <button 
+                onClick={() => setViewType('table')} 
+                  className={`px-3 py-2 border rounded-r-lg transition-colors ${
+                  viewType === 'table' 
+                      ? 'bg-sky-600 border-sky-600 text-white' 
+                      : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                }`}
+                  title="Таблица"
+              >
+                <ArrowsUpDownIcon className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
         
+        {/* Display info about the filter results */}
+          <div className="mt-4 text-sm text-slate-500">
+          Найдено {filteredMerchants.length} предпринимателей
+          {statusFilter !== 'Все' && ` со статусом "${statusFilter}"`}
+          {locationFilter && ` в городе ${locationFilter}`}
+          {searchQuery && ` по запросу "${searchQuery}"`}
+          </div>
+        </div>
+        
+        {/* Grid view */}
+        {viewType === 'grid' && (
+          <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredMerchants.length === 0 ? (
+                <div className="col-span-full py-12 text-center text-slate-500">
+                  <UsersIcon className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+                <p>Предприниматели не найдены</p>
+              </div>
+            ) : (
+              filteredMerchants.map((merchant) => (
+                <div 
+                  key={merchant.id}
+                    className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-all"
+                >
+                  <div className="p-5 flex flex-col h-full">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                          <div className="w-11 h-11 rounded-full bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600 text-lg font-semibold">
+                          {merchant.name[0]}
+                        </div>
+                        <div>
+                            <h3 className="font-semibold text-slate-800">{merchant.name}</h3>
+                            <div className="text-sm text-slate-500">{merchant.id}</div>
+                        </div>
+                      </div>
+                      
+                        <div className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${
+                        merchant.status === 'Активен' 
+                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' 
+                          : merchant.status === 'Заблокирован'
+                            ? 'bg-red-50 text-red-600 border border-red-200'
+                            : 'bg-amber-50 text-amber-600 border border-amber-200'
+                      }`}>
+                        {merchant.status === 'Активен' && <CheckCircleIcon className="w-3.5 h-3.5 mr-1" />}
+                        {merchant.status === 'На модерации' && <ClockIcon className="w-3.5 h-3.5 mr-1" />}
+                        {merchant.status === 'Заблокирован' && <XCircleIcon className="w-3.5 h-3.5 mr-1" />}
+                        {merchant.status}
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-3 mb-4 flex-1">
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <BuildingOfficeIcon className="w-4 h-4 text-slate-400" />
+                        <span>{merchant.owner}</span>
+                      </div>
+                      
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <EnvelopeIcon className="w-4 h-4 text-slate-400" />
+                        <span>{merchant.email}</span>
+                      </div>
+                      
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <PhoneIcon className="w-4 h-4 text-slate-400" />
+                        <span>{merchant.phone}</span>
+                      </div>
+                      
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <MapPinIcon className="w-4 h-4 text-slate-400" />
+                        <span>{merchant.location}</span>
+                      </div>
+                      
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <CalendarDaysIcon className="w-4 h-4 text-slate-400" />
+                        <span>С {formatDate(merchant.joinDate)}</span>
+                      </div>
+                    </div>
+                    
+                      <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-slate-100">
+                        <div className="bg-sky-50 text-sky-600 rounded-lg py-2 px-4 text-center flex-1">
+                        <div className="text-xl font-bold">{merchant.applications}</div>
+                        <div className="text-xs">заявок</div>
+                      </div>
+                      
+                      <div className="flex sm:flex-col gap-2">
+                          <button className="flex-1 p-2 text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">
+                          <EyeIcon className="w-5 h-5 mx-auto" />
+                        </button>
+                        
+                        <button className={`flex-1 p-2 rounded-lg transition-colors ${
+                          merchant.status === 'Заблокирован'
+                              ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
+                              : 'text-red-600 bg-red-50 hover:bg-red-100'
+                        }`}>
+                          <ShieldExclamationIcon className="w-5 h-5 mx-auto" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+            </div>
+          </div>
+        )}
+        
+        {/* Table view */}
+        {viewType === 'table' && (
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+            <table className="w-full">
             <thead>
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  ID
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Название
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Владелец
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Контакты
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Город
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Заявки
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Статус
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Действия
-                </th>
+                <tr className="bg-slate-50 text-left">
+                  <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase tracking-wider">ID / Название</th>
+                  <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase tracking-wider">Владелец</th>
+                  <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase tracking-wider">Контакты</th>
+                  <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase tracking-wider">Город</th>
+                  <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase tracking-wider">Заявки</th>
+                  <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase tracking-wider">Статус</th>
+                  <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase tracking-wider">Действия</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+              <tbody className="divide-y divide-slate-100">
               {filteredMerchants.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
+                    <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                      <UsersIcon className="w-8 h-8 mx-auto text-slate-300 mb-2" />
                     Предприниматели не найдены
                   </td>
                 </tr>
               ) : (
                 filteredMerchants.map((merchant) => (
-                  <tr key={merchant.id}>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
-                      {merchant.id}
+                    <tr key={merchant.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600 font-medium">
+                            {merchant.name[0]}
+                          </div>
+                          <div>
+                            <div className="font-medium text-slate-800">{merchant.name}</div>
+                            <div className="text-xs text-slate-500">{merchant.id}</div>
+                          </div>
+                        </div>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900 dark:text-white">
-                      {merchant.name}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
+                      <td className="px-6 py-4 text-sm text-slate-600">
                       {merchant.owner}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
-                      <div>{merchant.email}</div>
-                      <div>{merchant.phone}</div>
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <EnvelopeIcon className="w-4 h-4 text-slate-400" />
+                          {merchant.email}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <PhoneIcon className="w-4 h-4 text-slate-400" />
+                          {merchant.phone}
+                        </div>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        <div className="flex items-center gap-1.5">
+                          <MapPinIcon className="w-4 h-4 text-slate-400" />
                       {merchant.location}
+                        </div>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
+                      <td className="px-6 py-4">
+                        <div className="inline-flex items-center bg-sky-50 text-sky-600 rounded-lg px-3 py-1 text-sm font-medium">
                       {merchant.applications}
+                        </div>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className={`inline-flex px-2 text-xs font-semibold rounded-full ${
+                      <td className="px-6 py-4">
+                        <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium ${
                         merchant.status === 'Активен' 
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' 
+                            ? 'bg-emerald-50 text-emerald-600' 
                           : merchant.status === 'Заблокирован'
-                          ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                          : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+                            ? 'bg-red-50 text-red-600'
+                            : 'bg-amber-50 text-amber-600'
                       }`}>
-                        {merchant.status}
-                      </span>
+                          {merchant.status === 'Активен' && <CheckCircleIcon className="w-3.5 h-3.5" />}
+                          {merchant.status === 'На модерации' && <ClockIcon className="w-3.5 h-3.5" />}
+                          {merchant.status === 'Заблокирован' && <XCircleIcon className="w-3.5 h-3.5" />}
+                          <span>{merchant.status}</span>
+                        </div>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm">
-                          Просмотр
-                        </Button>
-                        <Button variant={merchant.status === 'Заблокирован' ? 'primary' : 'outline'} size="sm">
-                          {merchant.status === 'Заблокирован' ? 'Разблокировать' : 'Блокировать'}
-                        </Button>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <button className="p-1.5 text-slate-500 bg-slate-100 rounded-md hover:bg-slate-200 transition-colors">
+                            <EyeIcon className="w-4 h-4" />
+                          </button>
+                          <button className={`p-1.5 rounded-md transition-colors ${
+                            merchant.status === 'Заблокирован'
+                              ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
+                              : 'text-red-600 bg-red-50 hover:bg-red-100'
+                          }`}>
+                            <ShieldExclamationIcon className="w-4 h-4" />
+                          </button>
+                          <button className="p-1.5 text-slate-500 bg-slate-100 rounded-md hover:bg-slate-200 transition-colors">
+                            <EllipsisHorizontalIcon className="w-4 h-4" />
+                          </button>
                       </div>
                     </td>
                   </tr>
@@ -270,22 +576,45 @@ export default function AdminMerchants() {
             </tbody>
           </table>
         </div>
+        )}
         
-        <div className="mt-4 flex justify-between items-center">
-          <div className="text-sm text-slate-500 dark:text-slate-400">
+        {/* Pagination */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 border-t border-slate-200">
+          <span className="text-sm text-slate-500 mb-4 sm:mb-0">
             Показано {filteredMerchants.length} из {mockMerchants.length} предпринимателей
-          </div>
+          </span>
           
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled>
-              Назад
-            </Button>
-            <Button variant="outline" size="sm" disabled>
-              Вперед
-            </Button>
+          <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
+            <div className="flex items-center gap-1.5">
+              <button
+                disabled={true}
+                className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 border border-slate-200 cursor-not-allowed"
+              >
+              <ChevronLeftIcon className="w-4 h-4" />
+            </button>
+            
+              {[1, 2, 3].map((page) => (
+                <button
+                  key={page}
+                  className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all font-medium ${
+                    page === 1
+                      ? 'bg-sky-600 text-white font-bold shadow-md'
+                      : 'text-slate-700 hover:bg-sky-50 border border-slate-200'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+              
+              <button
+                className="w-9 h-9 flex items-center justify-center rounded-lg text-sky-600 hover:bg-sky-50 border border-sky-200 transition-colors"
+              >
+              <ChevronRightIcon className="w-4 h-4" />
+            </button>
+            </div>
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   );
 } 

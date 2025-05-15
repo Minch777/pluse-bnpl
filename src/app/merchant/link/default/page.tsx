@@ -51,13 +51,13 @@ export default function DefaultStorePage() {
           Главная точка
         </h1>
         <p className="text-base text-gray-600">
-          Ссылка и QR-код для подачи заявок через главную точку
+          QR-код для подачи заявок через главную точку
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h2 className="text-xl font-semibold mb-4">Ссылка на заявку</h2>
+          <h2 className="text-xl font-semibold mb-4">QR-код на заявку</h2>
           <div className="flex items-center gap-4 mb-4">
             <input
               type="text"
@@ -73,7 +73,7 @@ export default function DefaultStorePage() {
             </Button>
           </div>
           <p className="text-sm text-gray-500">
-            Отправьте эту ссылку клиенту для подачи заявки на рассрочку
+            Отправьте этот QR-код клиенту для подачи заявки на рассрочку
           </p>
         </div>
 
