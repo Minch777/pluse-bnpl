@@ -25,6 +25,7 @@ import { useRouter } from 'next/navigation';
 import { SidebarContext } from '@/app/merchant/layout';
 import applicationService, { Application, ApplicationMetrics } from '@/api/services/applicationService';
 import merchantService from '@/api/services/merchantService';
+import Link from 'next/link';
 
 // Modern color palette - matching link page
 const colors = {
@@ -363,6 +364,20 @@ export default function MerchantDashboard() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
+      {/* Test link to QR page - you can remove this in production */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <h3 className="text-sm font-medium text-blue-800 mb-2">Тестирование</h3>
+        <p className="text-sm text-blue-700 mb-3">
+          Проверьте новую страницу QR-кода для выбора банков вашими клиентами:
+        </p>
+        <Link 
+          href="/qr/techno-plus" 
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          Открыть QR-страницу
+        </Link>
+      </div>
+
       {/* Header section */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-800 mb-2">
