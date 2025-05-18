@@ -3,67 +3,78 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
-  PlusIcon, 
-  UserPlusIcon, 
-  LinkIcon, 
   QrCodeIcon,
   ArrowLeftIcon,
-  BuildingStorefrontIcon
+  BuildingStorefrontIcon,
+  LinkIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
+
+// Components
 import Card from '@/components/Card';
 import Button from '@/components/Button';
+import Badge from '@/components/Badge';
 
 type Store = {
   id: string;
   name: string;
   slug: string;
-  users: number;
   applications: number;
+  isMain: boolean;
 };
 
-// Mock data - в реальном приложении это будет приходить с бэкенда
-const mockStores: Store[] = [
-  {
-    id: '1',
-    name: 'Главный магазин',
-    slug: 'store123',
-    users: 3,
-    applications: 45,
-  },
-  {
-    id: '2',
-    name: 'Онлайн-магазин',
-    slug: 'store456',
-    users: 2,
-    applications: 28,
-  },
-];
-
-export default function StoresSettings() {
-  const router = useRouter();
-  const [stores, setStores] = useState<Store[]>(mockStores);
+export default function StoresSettingsPage() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [stores, setStores] = useState<Store[]>([]);
   const [isAddingStore, setIsAddingStore] = useState(false);
   const [newStoreName, setNewStoreName] = useState('');
   const [newStoreSlug, setNewStoreSlug] = useState('');
-
+  
   // Если только одна точка, перенаправляем на страницу ссылки
+  const router = useRouter();
+  
   useEffect(() => {
-    if (stores.length === 1) {
-      router.push('/merchant/link');
-    }
-  }, [stores.length, router]);
-
-  const handleAddStore = (e: React.FormEvent) => {
-    e.preventDefault();
-    // В реальном приложении здесь будет API-запрос
-    const newStore = {
-      id: String(stores.length + 1),
-      name: newStoreName,
-      slug: newStoreSlug,
-      users: 0,
-      applications: 0,
+    const fetchStores = async () => {
+      // Имитируем загрузку данных
+      setTimeout(() => {
+        // Моковые данные
+        const mockStores: Store[] = [
+          {
+            id: '1',
+            name: 'Основной магазин',
+            slug: 'main-store',
+            applications: 45,
+            isMain: true
+          },
+          {
+            id: '2',
+            name: 'Филиал на Абая',
+            slug: 'abay-branch',
+            applications: 28,
+            isMain: false
+          }
+        ];
+        
+        setStores(mockStores);
+        setIsLoading(false);
+      }, 1000);
     };
+    
+    fetchStores();
+  }, [router]);
+  
+  const addStore = () => {
+    if (!newStoreName.trim()) return;
+    
+    const newStore: Store = {
+      id: `${stores.length + 1}`,
+      name: newStoreName,
+      slug: newStoreSlug || newStoreName.toLowerCase().replace(/\s+/g, '-'),
+      applications: 0,
+      isMain: false
+    };
+    
     setStores([...stores, newStore]);
     setNewStoreName('');
     setNewStoreSlug('');
@@ -71,130 +82,134 @@ export default function StoresSettings() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <Button
+            variant="secondary"
+            className="mr-4"
+            onClick={() => router.back()}
+          >
+            <ArrowLeftIcon className="h-4 w-4 mr-2" />
+            Назад
+          </Button>
+          <h1 className="text-2xl font-bold">Управление точками продаж</h1>
+        </div>
+        
+        <Button 
+          onClick={() => setIsAddingStore(true)}
+          disabled={isAddingStore}
+        >
+          <BuildingStorefrontIcon className="h-5 w-5 mr-2" />
+          Добавить точку
+        </Button>
+      </div>
+      
+      {isLoading ? (
+        <div className="flex justify-center my-12">
+          <ArrowPathIcon className="h-8 w-8 text-gray-400 animate-spin" />
+        </div>
+      ) : (
         <div className="space-y-6">
-          {/* Header */}
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => router.push('/merchant/link')}
-                className="p-2 rounded-full hover:bg-gray-100"
-              >
-                <ArrowLeftIcon className="h-5 w-5 text-gray-500" />
-              </button>
-              <div>
-                <h1 className="text-2xl font-semibold text-gray-900">Точки продаж</h1>
-                <p className="mt-1 text-sm text-gray-500">
-                  Управляйте точками продаж и сотрудниками
-                </p>
-              </div>
-            </div>
-            <Button
-              onClick={() => setIsAddingStore(true)}
-              className="inline-flex items-center"
-            >
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Добавить точку
-            </Button>
-          </div>
-
-          {/* Add Store Form */}
           {isAddingStore && (
             <Card>
-              <form onSubmit={handleAddStore} className="space-y-4">
-                <div>
-                  <label htmlFor="storeName" className="block text-sm font-medium text-gray-700">
-                    Название точки
-                  </label>
-                  <input
-                    type="text"
-                    id="storeName"
-                    value={newStoreName}
-                    onChange={(e) => setNewStoreName(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    placeholder="Например: Онлайн-магазин"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="storeSlug" className="block text-sm font-medium text-gray-700">
-                    Уникальный идентификатор
-                  </label>
-                  <div className="mt-1 flex rounded-md shadow-sm">
-                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm">
-                      {typeof window !== 'undefined' ? window.location.origin : ''}/apply/
-                    </span>
+              <div className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Новая точка продаж</h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Название точки
+                    </label>
                     <input
                       type="text"
-                      id="storeSlug"
-                      value={newStoreSlug}
-                      onChange={(e) => setNewStoreSlug(e.target.value)}
-                      className="flex-1 min-w-0 block w-full rounded-none rounded-r-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      placeholder="online-store"
-                      required
+                      value={newStoreName}
+                      onChange={(e) => setNewStoreName(e.target.value)}
+                      className="w-full p-2 border rounded-md"
+                      placeholder="Например: Филиал на Достык"
                     />
                   </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Slug для ссылки (опционально)
+                    </label>
+                    <div className="flex items-center">
+                      <span className="text-gray-500 bg-gray-100 p-2 rounded-l-md border border-r-0">
+                        {typeof window !== 'undefined' ? window.location.origin : ''}/public/
+                      </span>
+                      <input
+                        type="text"
+                        value={newStoreSlug}
+                        onChange={(e) => setNewStoreSlug(e.target.value)}
+                        className="flex-1 p-2 border rounded-r-md"
+                        placeholder="my-store"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Используйте латинские буквы, цифры и дефисы. Если не указано, будет сгенерировано из названия.
+                    </p>
+                  </div>
+                  
+                  <div className="flex justify-end gap-3 pt-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() => setIsAddingStore(false)}
+                    >
+                      Отмена
+                    </Button>
+                    <Button
+                      onClick={addStore}
+                      disabled={!newStoreName.trim()}
+                    >
+                      Добавить точку
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex justify-end space-x-3">
-                  <Button
-                    type="button"
-                    onClick={() => setIsAddingStore(false)}
-                    variant="secondary"
-                  >
-                    Отмена
-                  </Button>
-                  <Button
-                    type="submit"
-                  >
-                    Добавить
-                  </Button>
-                </div>
-              </form>
+              </div>
             </Card>
           )}
-
-          {/* Stores Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {stores.map((store) => (
               <Card key={store.id}>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <BuildingStorefrontIcon className="h-6 w-6 text-gray-400" />
-                      <h3 className="text-lg font-medium text-gray-900">{store.name}</h3>
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold">{store.name}</h3>
+                      {store.isMain && (
+                        <Badge color="blue" className="mt-1">
+                          Основная точка
+                        </Badge>
+                      )}
                     </div>
                     <Link
-                      href={`/merchant/settings/stores/${store.id}/users`}
-                      className="text-blue-600 hover:text-blue-900"
+                      href={`/merchant/link/${store.slug}`}
+                      className="text-indigo-600 hover:text-indigo-800"
                     >
-                      <UserPlusIcon className="h-5 w-5" />
+                      <QrCodeIcon className="h-5 w-5" />
                     </Link>
                   </div>
                   
-                  <div className="space-y-2">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <LinkIcon className="h-4 w-4 mr-2" />
-                      <span className="truncate">
-                        {typeof window !== 'undefined' ? window.location.origin : ''}/apply/{store.slug}
-                      </span>
+                  <div className="space-y-4">
+                    <div className="flex items-center text-sm text-gray-500">
+                      <div className="flex items-center truncate max-w-full">
+                        <LinkIcon className="h-4 w-4 mr-2" />
+                        <span className="truncate">
+                          {typeof window !== 'undefined' ? window.location.origin : ''}/public/{store.slug}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <QrCodeIcon className="h-4 w-4 mr-2" />
-                      <span>QR-код</span>
+                    
+                    <div className="text-sm text-gray-500">
+                      <span>{store.applications} заявок</span>
                     </div>
-                  </div>
-                  
-                  <div className="flex justify-between text-sm text-gray-500">
-                    <span>{store.users} сотрудников</span>
-                    <span>{store.applications} заявок</span>
                   </div>
                 </div>
               </Card>
             ))}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 } 

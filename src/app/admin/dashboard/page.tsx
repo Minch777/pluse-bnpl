@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   ArrowUpIcon, 
   ArrowDownIcon, 
@@ -20,13 +20,41 @@ import {
   EyeIcon,
   MagnifyingGlassIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  CurrencyDollarIcon,
+  UserGroupIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
+import applicationService from '@/api/services/applicationService';
 
 export default function AdminDashboard() {
-  const [timeframeFilter, setTimeframeFilter] = useState('month');
+  const [timeframeFilter, setTimeframeFilter] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [realApplicationsData, setRealApplicationsData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   
+  // Fetch real applications data
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        console.log('Fetching real applications from API...');
+        const applicationsData = await applicationService.getApplications();
+        console.log('API response:', applicationsData);
+        setRealApplicationsData(applicationsData);
+      } catch (err) {
+        console.error('Error fetching applications:', err);
+        setError('Failed to fetch applications');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchApplications();
+  }, []);
+
   // Modern color palette - matching merchant dashboard
   const colors = {
     primary: '#0891B2', // teal-600
@@ -151,7 +179,17 @@ export default function AdminDashboard() {
   
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    // Simulate data refresh
+    
+    try {
+      // Fetch real data
+      const applicationsData = await applicationService.getApplications();
+      console.log('Refreshed applications data:', applicationsData);
+      setRealApplicationsData(applicationsData);
+    } catch (err) {
+      console.error('Error refreshing data:', err);
+    }
+    
+    // Keep the existing mock refresh simulation
     await new Promise(resolve => setTimeout(resolve, 1000));
     setIsRefreshing(false);
   };

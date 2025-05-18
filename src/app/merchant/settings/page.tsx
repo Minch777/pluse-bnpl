@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   UserCircleIcon, 
   KeyIcon, 
@@ -16,11 +17,13 @@ import {
   NewspaperIcon,
   ArrowPathIcon,
   CreditCardIcon,
-  Square3Stack3DIcon
+  Square3Stack3DIcon,
+  ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline';
 import { SparklesIcon } from '@heroicons/react/24/solid';
 
 export default function MerchantSettings() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('profile');
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -39,6 +42,11 @@ export default function MerchantSettings() {
     setTimeout(() => {
       setSuccess(false);
     }, 3000);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    router.push('/login');
   };
 
   return (
@@ -355,6 +363,29 @@ export default function MerchantSettings() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Logout Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
+                <ArrowRightOnRectangleIcon className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-medium text-slate-800">Выйти из аккаунта</h2>
+                <p className="text-sm text-slate-500">Завершить текущую сессию</p>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="px-5 py-2.5 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors"
+            >
+              Выйти
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

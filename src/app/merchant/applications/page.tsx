@@ -130,7 +130,7 @@ export default function MerchantApplications() {
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         {/* Create application button */}
         <button 
-          onClick={() => router.push('/apply/store123')}
+          onClick={() => router.push('/public/store123')}
           className="w-full sm:w-auto border-2 border-[#8335ff] text-[#8335ff] px-4 py-2 rounded-md text-sm hover:bg-[#f6efff] inline-flex items-center justify-center sm:justify-start gap-2 transition-all"
         >
           <PlusIcon className="h-4 w-4" />

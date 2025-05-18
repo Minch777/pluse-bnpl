@@ -16,9 +16,15 @@ import {
   BuildingLibraryIcon,
   CheckIcon,
   LinkIcon,
-  ExclamationCircleIcon
+  ExclamationCircleIcon,
+  UserGroupIcon,
+  ArrowTrendingUpIcon,
+  CurrencyDollarIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { QRCodeSVG } from 'qrcode.react';
+import merchantService, { Merchant, Outlet, ApplicationLink } from '@/api/services/merchantService';
+import QRBenefitsModal from '@/components/QRBenefitsModal';
 
 // Modern color palette
 const colors = {
@@ -144,7 +150,7 @@ function AddPointModal({
               </label>
               <div className="mt-1 flex rounded-md shadow-sm">
                 <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-slate-300 bg-slate-50 text-slate-500 sm:text-sm">
-                  apply/
+                  public/
                 </span>
                 <input
                   type="text"
@@ -271,105 +277,110 @@ function ShareMenu({
 export default function MerchantLink() {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [salesPoints, setSalesPoints] = useState<SalesPoint[]>([]);
-  const [nextId, setNextId] = useState(1);
-  const [selectedPoint, setSelectedPoint] = useState<string | null>(null);
+  const [merchant, setMerchant] = useState<Merchant | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [tokenState, setTokenState] = useState<string | null>(null);
+  const [showQRBenefits, setShowQRBenefits] = useState(false);
   
-  // Состояния для дополнительной ссылки
-  const [externalLink, setExternalLink] = useState('');
-  const [externalLinkType, setExternalLinkType] = useState('kaspi');
-  const [externalLinkCopied, setExternalLinkCopied] = useState(false);
-  const [externalLinkError, setExternalLinkError] = useState(false);
-  // Новое состояние для модального окна преимуществ мультиссылки
-  const [isMultilinkModalOpen, setIsMultilinkModalOpen] = useState(false);
-  
-  const merchantSlug = 'store123';
-  const baseApplicationLink = `http://localhost:3000/apply/${merchantSlug}`;
   const qrRef = useRef<SVGSVGElement>(null);
   
-  // Управление скроллом страницы при открытии/закрытии модального окна
+  // Проверяем параметр URL для открытия попапа
   useEffect(() => {
-    if (isMultilinkModalOpen) {
-      // Отключаем скролл на body когда модальное окно открыто
-      document.body.style.overflow = 'hidden';
-    } else {
-      // Включаем скролл когда модальное окно закрыто
-      document.body.style.overflow = '';
-    }
-    
-    // Сбрасываем стили при размонтировании компонента
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isMultilinkModalOpen]);
-  
-  // Проверяем URL-параметры при загрузке страницы
-  useEffect(() => {
-    // Получаем параметры из URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const showMultilinkModal = urlParams.get('show_multilink_modal');
-    
-    // Если параметр установлен, открываем модальное окно
-    if (showMultilinkModal === 'true') {
-      setIsMultilinkModalOpen(true);
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('show_qr_benefits') === 'true') {
+      // Всегда добавляем небольшую задержку для гарантированного открытия после монтирования
+      setTimeout(() => {
+        setShowQRBenefits(true);
+      }, 300);
       
-      // Удаляем параметр из URL без перезагрузки страницы
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
+      // Очищаем URL от параметра
+      router.replace('/merchant/link');
     }
-    
-    // Добавляем слушатель события для открытия модального окна
-    const handleOpenModal = () => {
-      setIsMultilinkModalOpen(true);
+  }, [router]);
+  
+  // Слушатель события для открытия модального окна
+  useEffect(() => {
+    const handleShowQRBenefits = () => {
+      setShowQRBenefits(true);
     };
-    
-    window.addEventListener('open-multilink-modal', handleOpenModal);
-    
-    // Очищаем слушатель при размонтировании компонента
+
+    window.addEventListener('showQRBenefits', handleShowQRBenefits);
     return () => {
-      window.removeEventListener('open-multilink-modal', handleOpenModal);
+      window.removeEventListener('showQRBenefits', handleShowQRBenefits);
     };
   }, []);
   
-  // Получаем актуальную ссылку в зависимости от выбранной точки
-  const getCurrentLink = () => {
-    if (!selectedPoint) return baseApplicationLink;
+  // Check and set token if needed
+  useEffect(() => {
+    // Проверяем и выводим информацию о токене
+    const token = localStorage.getItem('token');
+    console.log('Current token in localStorage:', token ? 'Token exists' : 'No token');
+    setTokenState(token);
     
-    const point = salesPoints.find(p => p.id.toString() === selectedPoint);
-    if (!point) return baseApplicationLink;
+    // Если токена нет, перенаправляем на страницу логина
+    if (!token) {
+      console.log('No token found, redirecting to login');
+      localStorage.setItem('redirectAfterLogin', window.location.pathname);
+      router.push('/login');
+    }
     
-    return `http://localhost:3000/apply/${point.slug}`;
-  };
+    // Только для тестирования - если нужен тестовый токен
+    if (process.env.NODE_ENV === 'development' && !token) {
+      // Если мы разрабатываем и токена нет, можно задать тестовый токен
+      const devToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyMzQ1Njc4OTAiLCJuYW1lIjoiVGVzdCBVc2VyIiwicm9sZSI6Im1lcmNoYW50In0.7bHQI2CmTCgQuV3PJeVgGlsafKH5hEtO-3o4NZP5bh0';
+      console.log('Setting development token for testing');
+      localStorage.setItem('token', devToken);
+      setTokenState(devToken);
+    }
+  }, [router]);
   
-  // Получаем мультиссылку Pluse + другой банк
-  const getMultiLink = () => {
-    if (!externalLink) return '';
+  // Fetch merchant data on component mount
+  useEffect(() => {
+    const fetchMerchantData = async () => {
+      // Не делаем запрос, если нет токена
+      if (!tokenState) {
+        console.log('Skipping API call, no token available');
+        return;
+      }
     
-    // Создаем URL с параметром external_link, который содержит закодированную внешнюю ссылку
-    return `http://localhost:3000/compare-offers/${merchantSlug}?external_link=${encodeURIComponent(externalLink)}&type=${externalLinkType}`;
-  };
-  
-  const handleAddSalesPoint = (point: { name: string; description: string; slug: string }) => {
-    const newPoint = {
-      id: nextId,
-      name: point.name,
-      description: point.description,
-      slug: point.slug,
-      stats: {
-        views: Math.floor(Math.random() * 100),
-        applications: Math.floor(Math.random() * 20),
-        conversion: Math.floor(Math.random() * 30),
+      try {
+        console.log('Starting merchant data fetch...');
+        setLoading(true);
+        const merchantData = await merchantService.getCurrentMerchant();
+        console.log('Merchant data received in component:', merchantData);
+        setMerchant(merchantData);
+        
+        setError(null);
+      } catch (err: any) {
+        console.error('Error in component when fetching merchant data:', err);
+        setError(`Не удалось загрузить данные мерчанта: ${err.message || JSON.stringify(err)}`);
+      } finally {
+        setLoading(false);
       }
     };
     
-    setSalesPoints(prev => [...prev, newPoint]);
-    setNextId(prev => prev + 1);
-    setIsModalOpen(false);
+    fetchMerchantData();
+  }, [tokenState]);
+  
+  // Gets the current application URL or generates a new one if needed
+  const getCurrentLink = async () => {
+    if (!merchant) return '';
+    
+    try {
+      const result = await merchantService.createApplicationLink(merchant.slug, 0);
+      setGeneratedLink(result.redirectUrl);
+      return result.redirectUrl;
+    } catch (err) {
+      console.error('Error creating application link:', err);
+      return `${process.env.NEXT_PUBLIC_FRONTEND_URL}/public/${merchant?.slug}`;
+    }
   };
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(getCurrentLink());
+  
+  const handleCopyLink = async () => {
+    const link = await getCurrentLink();
+    navigator.clipboard.writeText(link);
     setCopied(true);
     
     setTimeout(() => {
@@ -377,21 +388,6 @@ export default function MerchantLink() {
     }, 2000);
   };
   
-  const handleCopyMultiLink = () => {
-    if (!externalLink) {
-      setExternalLinkError(true);
-      setTimeout(() => setExternalLinkError(false), 3000);
-      return;
-    }
-    
-    navigator.clipboard.writeText(getMultiLink());
-    setExternalLinkCopied(true);
-    
-    setTimeout(() => {
-      setExternalLinkCopied(false);
-    }, 2000);
-  };
-
   const handleDownloadQR = () => {
     if (!qrRef.current) return;
 
@@ -412,7 +408,7 @@ export default function MerchantLink() {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
       const link = document.createElement('a');
-      link.download = `pluse-qr-${merchantSlug}.png`;
+      link.download = `pluse-qr-${merchant?.slug || ''}`;
       link.href = canvas.toDataURL('image/png');
       link.click();
     };
@@ -420,58 +416,77 @@ export default function MerchantLink() {
     img.src = 'data:image/svg+xml;base64,' + btoa(data);
   };
   
-  // Валидация внешней ссылки
-  const validateExternalLink = (link: string) => {
-    if (externalLinkType === 'kaspi' && link && !link.startsWith('https://kaspi.kz/')) {
-      setExternalLinkError(true);
-      setTimeout(() => setExternalLinkError(false), 3000);
-      return false;
-    }
-    
-    if (externalLinkType === 'halyk' && link && !link.startsWith('https://halykbank.kz/')) {
-      setExternalLinkError(true);
-      setTimeout(() => setExternalLinkError(false), 3000);
-      return false;
-    }
-    
-    if (externalLinkType === 'homecredit' && link && !link.startsWith('https://homecredit.kz/')) {
-      setExternalLinkError(true);
-      setTimeout(() => setExternalLinkError(false), 3000);
-      return false;
-    }
-    
-    if (externalLinkType === 'freedom' && link && !link.startsWith('https://bankfreedom.kz/')) {
-      setExternalLinkError(true);
-      setTimeout(() => setExternalLinkError(false), 3000);
-      return false;
-    }
-    
-    setExternalLinkError(false);
-    return true;
-  };
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sky-500"></div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="bg-red-50 rounded-lg p-6 text-center">
+        <ExclamationCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-red-800">Ошибка загрузки данных</h3>
+        <p className="mt-2 text-red-700">{error}</p>
+        <div className="mt-4 text-left bg-white p-4 rounded-md text-sm text-gray-700 max-h-40 overflow-auto">
+          <p className="font-medium">Данные токена:</p>
+          <pre className="whitespace-pre-wrap mt-2 bg-gray-100 p-2 rounded">
+            {tokenState ? 'Токен существует' : 'Токен отсутствует'}
+          </pre>
+          <p className="font-medium mt-3">Проверьте следующее:</p>
+          <ul className="list-disc pl-5 mt-2 space-y-1">
+            <li>API сервер запущен на порту 4010</li>
+            <li>API-путь /merchant/me доступен</li>
+            <li>Соединение с интернетом работает</li>
+            <li>Вы вошли в систему (если требуется авторизация)</li>
+          </ul>
+        </div>
+        <div className="mt-6 flex gap-4 justify-center">
+          <button 
+            onClick={() => router.push('/login')}
+            className="px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700 transition-colors"
+          >
+            Войти заново
+          </button>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+          >
+            Попробовать снова
+          </button>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-8 animate-fadeIn">
-      {/* Header section - simplified */}
+      <QRBenefitsModal 
+        isOpen={showQRBenefits} 
+        onClose={() => setShowQRBenefits(false)} 
+      />
+      {/* Header section */}
       <header className="pb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">QR-коды для оформления</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Единый QR-код для оформления рассрочки</h1>
         <p className="text-lg text-gray-600">
-          Создавайте и делитесь QR-кодами для оформления рассрочки
+          Используйте один QR-код для всех банков. Клиенты смогут выбрать удобный вариант рассрочки.
         </p>
       </header>
 
-      {/* Primary section - Link and QR code */}
+      {/* Main QR section */}
       <section className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="p-6 border-b border-gray-100">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            {/* QR Code - Always visible */}
+          <div className="grid md:grid-cols-2 gap-8 items-start">
+            {/* QR Code */}
             <div className="flex flex-col items-center justify-center">
               <div className="relative mb-4">
                 <div className="absolute inset-0 bg-gradient-to-br from-sky-100 to-transparent rounded-xl transform rotate-6 scale-105"></div>
                 <div className="relative bg-white p-5 rounded-xl shadow-sm border border-gray-200">
                   <QRCodeSVG
                     ref={qrRef}
-                    value={getCurrentLink()}
+                    value={generatedLink || `${process.env.NEXT_PUBLIC_FRONTEND_URL}/public/${merchant?.slug || ''}`}
                     size={180}
                     bgColor="#FFFFFF"
                     fgColor={colors.primary}
@@ -484,50 +499,35 @@ export default function MerchantLink() {
               <div className="flex gap-3 mt-2 w-full justify-center">
                 <button
                   onClick={handleDownloadQR}
-                  className="flex items-center gap-1.5 px-3.5 py-2 bg-sky-50 text-sky-600 text-sm font-medium rounded-lg hover:bg-sky-100 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <ArrowDownTrayIcon className="h-4 w-4" />
-                  <span>Скачать QR-код</span>
+                  <span>Скачать QR</span>
                 </button>
+                <ShareMenu 
+                  applicationLink={generatedLink || `${process.env.NEXT_PUBLIC_FRONTEND_URL}/public/${merchant?.slug || ''}`}
+                  onCopyLink={handleCopyLink}
+                  copied={copied}
+                />
               </div>
             </div>
             
             {/* Link section */}
             <div className="space-y-5">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">QR-код на оформление</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Ссылка на оформление</h2>
                 <p className="text-gray-600 mb-4">
-                  Один QR-код для всех банков. Отправьте эту ссылку клиенту или разместите QR-код в точке продаж для быстрого оформления рассрочки
+                  Отправьте эту ссылку клиенту или разместите QR-код в точке продаж
                 </p>
               </div>
             
               <div className="space-y-3">
-                <div className="relative">
-                  <select 
-                    className="w-full appearance-none py-3 pl-4 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
-                    value={selectedPoint || ""}
-                    onChange={(e) => setSelectedPoint(e.target.value || null)}
-                  >
-                    <option value="">Основная ссылка</option>
-                    {salesPoints.map(point => (
-                      <option key={point.id} value={point.id.toString()}>
-                        Точка: {point.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-                
                 <div className="flex gap-3">
                   <div className="flex-1 relative">
                     <input
                       type="text"
                       readOnly
-                      value={getCurrentLink()}
+                      value={generatedLink || `${process.env.NEXT_PUBLIC_FRONTEND_URL}/public/${merchant?.slug || ''}`}
                       className="w-full pr-10 py-3 px-4 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
                     />
                   </div>
@@ -553,108 +553,113 @@ export default function MerchantLink() {
             </div>
           </div>
         </div>
-      </section>
-      
-      {/* Sales Points Section */}
-      <section className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">Точки продаж</h2>
-              <p className="text-sm text-gray-600">Создайте отдельные ссылки для разных торговых точек</p>
-            </div>
-            
-            <button 
-              onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-white text-sky-600 text-sm font-medium rounded-lg border border-sky-200 hover:bg-sky-50 transition-colors"
-            >
-              <PlusIcon className="h-4 w-4" />
-              <span>Добавить точку</span>
-            </button>
-          </div>
-        </div>
-        
-        <div className="p-6">
-          {salesPoints.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Main store card */}
-              <div 
-                className={`bg-gradient-to-br from-sky-50 to-sky-100/70 rounded-xl p-5 shadow-sm relative overflow-hidden border border-sky-100 hover:shadow-md transition-all cursor-pointer
-                  ${!selectedPoint ? 'ring-2 ring-sky-500 ring-offset-2' : ''}`}
-                onClick={() => setSelectedPoint(null)}
-              >
-                <div className="mb-3">
-                  <span className="text-xs font-medium text-sky-600 bg-sky-100 px-2 py-1 rounded-full">Основная</span>
-                </div>
-                
-                <h4 className="text-md font-semibold text-gray-800 mb-1">
-                  Главный магазин
-                </h4>
-                
-                <p className="text-sm text-gray-600 mb-3">
-                  Основная ссылка
-                </p>
-                
-                <div className="absolute -bottom-5 -right-5 w-24 h-24 bg-gradient-to-br from-sky-200/50 to-transparent rounded-full"></div>
-                <div className="absolute top-6 right-6">
-                  <SparklesIcon className="h-10 w-10 text-sky-200/70" />
-                </div>
-              </div>
 
-              {/* Custom sales points */}
-              {salesPoints.map((point) => (
-                <div 
-                  key={point.id}
-                  className={`bg-white rounded-xl p-5 shadow-sm relative overflow-hidden border border-gray-200 hover:border-sky-200 hover:shadow-md transition-all cursor-pointer
-                    ${selectedPoint === point.id.toString() ? 'ring-2 ring-sky-500 ring-offset-2' : ''}`}
-                  onClick={() => setSelectedPoint(point.id.toString())}
-                >
-                  <h4 className="text-md font-semibold text-gray-800 mb-1">
-                    {point.name}
-                  </h4>
-                  
-                  {point.description && (
-                    <p className="text-sm text-gray-500 mb-3">
-                      {point.description}
-                    </p>
-                  )}
-                  
-                  <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-2">
-                    <LinkIcon className="h-3.5 w-3.5" />
-                    <span>apply/{point.slug}</span>
+        {/* Connected Banks */}
+        <div className="px-6 py-5 bg-gray-50 border-t border-gray-200">
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Левый блок: Банки */}
+            <div className="bg-gradient-to-br from-white to-slate-50 rounded-xl border border-gray-200 shadow-md h-full flex flex-col p-6 transition-all duration-300 hover:shadow-lg">
+              <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <BuildingLibraryIcon className="h-6 w-6 text-sky-500" />
+                <span>Выберите банки для подключения</span>
+              </h3>
+              <div className="divide-y divide-gray-100 flex-1 -mx-4">
+                {/* RBK Bank - Connected */}
+                <div className="p-5 flex items-center justify-between bg-gradient-to-r from-sky-50 to-transparent hover:from-sky-100/70 transition-all duration-200 rounded-lg mx-2 my-1">
+                  <div className="flex items-center gap-3">
+                    <div className="w-28 h-10 flex items-center">
+                      <img src="/rbk-logo.png" alt="RBK Bank" className="w-full h-auto object-contain" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm font-medium text-emerald-600 bg-emerald-50 px-4 py-1.5 rounded-full shadow-sm border border-emerald-100">
+                    <CheckIcon className="h-4 w-4" />
+                    <span>Подключено</span>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-gray-50 rounded-xl p-6 text-center">
-              <div className="flex justify-center mb-3">
-                <div className="p-3 bg-white rounded-full shadow-sm">
-                  <LinkIcon className="h-6 w-6 text-gray-400" />
+                {/* Kaspi Bank - Not Connected */}
+                <div className="p-5 flex items-center justify-between hover:bg-slate-50/70 transition-all duration-200 rounded-lg mx-2 my-1">
+                  <div className="flex items-center gap-3">
+                    <div className="w-28 h-10 flex items-center">
+                      <img src="/kaspi-logo.png" alt="Kaspi Bank" className="w-full h-auto object-contain" />
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => router.push('/merchant/terms?show_connect_bank=kaspi')}
+                    className="text-sm font-medium text-sky-600 hover:text-sky-700 flex items-center gap-1 bg-sky-50 px-3 py-1 rounded-full hover:bg-sky-100 transition-colors"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    <span>Подключить</span>
+                  </button>
+                </div>
+                {/* Halyk Bank - Not Connected */}
+                <div className="p-5 flex items-center justify-between hover:bg-slate-50/70 transition-all duration-200 rounded-lg mx-2 my-1">
+                  <div className="flex items-center gap-3">
+                    <div className="w-28 h-10 flex items-center">
+                      <img src="/halyk-logo.png" alt="Halyk Bank" className="w-full h-auto object-contain" />
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => router.push('/merchant/terms?show_connect_bank=halyk')}
+                    className="text-sm font-medium text-sky-600 hover:text-sky-700 flex items-center gap-1 bg-sky-50 px-3 py-1 rounded-full hover:bg-sky-100 transition-colors"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    <span>Подключить</span>
+                  </button>
+                </div>
+                {/* Add More Banks */}
+                <div className="p-5 flex items-center justify-between hover:bg-slate-50/70 transition-all duration-200 rounded-lg mx-2 my-1">
+                  <button 
+                    className="flex items-center gap-3 text-gray-500 hover:text-gray-700 transition-colors group w-full"
+                    onClick={() => router.push('/merchant/terms')}
+                  >
+                    <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 group-hover:bg-gray-200 transition-colors shadow-sm">
+                      <PlusIcon className="h-5 w-5 text-gray-500 group-hover:text-gray-700" />
+                    </div>
+                    <span className="text-sm font-medium">Другие банки</span>
+                  </button>
                 </div>
               </div>
-              <h4 className="text-md font-medium text-gray-700 mb-2">У вас пока нет торговых точек</h4>
-              <p className="text-sm text-gray-500 mb-4">
-                Создайте отдельные ссылки для разных магазинов или каналов продаж
-              </p>
-              <button 
-                onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white text-sky-600 text-sm font-medium rounded-lg border border-sky-200 hover:bg-sky-50 transition-colors"
-              >
-                <PlusIcon className="h-4 w-4" />
-                <span>Добавить первую точку</span>
-              </button>
             </div>
-          )}
+
+            {/* Правый блок: Как это работает */}
+            <div className="bg-gradient-to-br from-white to-slate-50 rounded-xl border border-gray-200 shadow-md h-full flex flex-col p-6 transition-all duration-300 hover:shadow-lg">
+              <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <SparklesIcon className="h-6 w-6 text-sky-500" />
+                <span>Как это работает:</span>
+              </h3>
+              <div className="divide-y divide-gray-100 flex-1 -mx-4">
+                <div className="p-5 flex items-start gap-4 hover:bg-sky-50/40 transition-all duration-200 rounded-lg mx-2 my-1">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center shadow-sm">
+                    <PlusIcon className="h-5 w-5 text-sky-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-1">Шаг 1</h4>
+                    <p className="text-gray-600">Добавляете любой банк для оформления рассрочки</p>
+                  </div>
+                </div>
+                <div className="p-5 flex items-start gap-4 hover:bg-indigo-50/40 transition-all duration-200 rounded-lg mx-2 my-1">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center shadow-sm">
+                    <QrCodeIcon className="h-5 w-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-1">Шаг 2</h4>
+                    <p className="text-gray-600">Один QR — для сайта, кассы, рекламы</p>
+                  </div>
+                </div>
+                <div className="p-5 flex items-start gap-4 hover:bg-emerald-50/40 transition-all duration-200 rounded-lg mx-2 my-1">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shadow-sm">
+                    <ArrowTrendingUpIcon className="h-5 w-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-1">Шаг 3</h4>
+                    <p className="text-gray-600">Ваш клиент доволен. Если один банк отказал – другой может одобрить</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
-
-      {/* Modals */}
-      <AddPointModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleAddSalesPoint}
-      />
     </div>
   );
 }

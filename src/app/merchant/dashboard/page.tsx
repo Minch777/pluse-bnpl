@@ -24,6 +24,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { SidebarContext } from '@/app/merchant/layout';
 import applicationService, { Application, ApplicationMetrics } from '@/api/services/applicationService';
+import merchantService from '@/api/services/merchantService';
 
 // Modern color palette - matching link page
 const colors = {
@@ -192,12 +193,16 @@ export default function MerchantDashboard() {
     end: ''
   });
 
+  const [merchant, setMerchant] = useState<any>(null);
+
   // Function to load application data
   const loadApplicationsData = async () => {
     try {
       setIsLoading(true);
       setError(null);
       setNoApplications(false);
+      
+      console.log('Fetching applications from API...');
       
       // Fetch applications with pagination and filters
       const applicationsData = await applicationService.getApplications({
@@ -206,8 +211,11 @@ export default function MerchantDashboard() {
         status: statusFilter
       });
       
+      console.log('Applications data received:', applicationsData);
+      
       // Set empty applications by default
       if (!applicationsData || !applicationsData.applications) {
+        console.log('No applications data received or invalid format');
         setNoApplications(true);
         setApplications([]);
         setTotalCount(0);
@@ -219,11 +227,14 @@ export default function MerchantDashboard() {
       
       // If we got data but there are no applications, set the noApplications flag
       if (applicationsData.applications.length === 0) {
+        console.log('Applications array is empty');
         setNoApplications(true);
       }
       
       // Fetch metrics for the dashboard
+      console.log('Fetching metrics from API...');
       const metricsData = await applicationService.getApplicationMetrics();
+      console.log('Metrics data received:', metricsData);
       setMetrics(metricsData);
       
     } catch (err: any) {
@@ -239,9 +250,27 @@ export default function MerchantDashboard() {
     }
   };
   
+  // Function to fetch merchant data and application link
+  const fetchMerchantData = async () => {
+    try {
+      const merchantData = await merchantService.getCurrentMerchant();
+      setMerchant(merchantData);
+    } catch (err) {
+      console.error('Error fetching merchant data:', err);
+    }
+  };
+  
+  // Function to get application link
+  const getApplicationLink = () => {
+    if (!merchant) return '/public';
+    
+    return `${process.env.NEXT_PUBLIC_FRONTEND_URL}/public/${merchant.slug}`;
+  };
+  
   // Load data on component mount and when filters/pagination change
   useEffect(() => {
     loadApplicationsData();
+    fetchMerchantData();
   }, [currentPage, limit, statusFilter, selectedPeriod]);
 
   const formatAmount = (amount: number) => {
@@ -267,7 +296,7 @@ export default function MerchantDashboard() {
 
   const goToNextPage = () => {
     if (currentPage * limit < totalCount) {
-      setCurrentPage(currentPage + 1);
+    setCurrentPage(currentPage + 1);
     }
   };
 
@@ -290,15 +319,24 @@ export default function MerchantDashboard() {
   };
 
   const getStatusDisplay = (status: string) => {
-    switch (status) {
+    console.log('Processing status:', status);
+    
+    // Преобразуем в нижний регистр для обработки в switch
+    const normalizedStatus = status.toLowerCase();
+    
+    switch (normalizedStatus) {
       case 'issued':
+      case 'approved':
+      case 'одобрено':
         return (
           <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-xs font-medium">
             <CheckCircleIcon className="w-3.5 h-3.5" />
             <span>Выдано</span>
           </div>
         );
-      case 'pending':
+      case 'pending': 
+      case 'на рассмотрении':
+      case 'created':
         return (
           <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-amber-50 text-amber-600 rounded-lg text-xs font-medium">
             <ClockIcon className="w-3.5 h-3.5" />
@@ -306,6 +344,7 @@ export default function MerchantDashboard() {
           </div>
         );
       case 'rejected':
+      case 'отказано':
         return (
           <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-red-50 text-red-600 rounded-lg text-xs font-medium">
             <XCircleIcon className="w-3.5 h-3.5" />
@@ -399,7 +438,7 @@ export default function MerchantDashboard() {
         {/* Action button - right side */}
         <button 
           className="flex items-center gap-2 px-4 h-10 bg-transparent border border-sky-500 text-sky-600 rounded-lg text-sm font-medium hover:bg-sky-50 transition-colors"
-          onClick={() => router.push('/apply/store123')}
+          onClick={() => window.open(getApplicationLink(), '_blank')}
         >
           <PlusIcon className="w-5 h-5" />
           <span>Подать заявку</span>
@@ -488,7 +527,7 @@ export default function MerchantDashboard() {
               <p className="text-slate-500 mb-8">Создайте вашу первую заявку на рассрочку, чтобы начать работу с платформой</p>
               <button 
                 className="flex items-center gap-2 px-5 py-2.5 bg-sky-600 text-white rounded-lg text-sm font-medium hover:bg-sky-700 transition-colors mx-auto"
-                onClick={() => router.push('/apply/store123')}
+                onClick={() => window.open(getApplicationLink(), '_blank')}
               >
                 <PlusIcon className="w-5 h-5" />
                 <span>Подать заявку</span>
@@ -499,95 +538,95 @@ export default function MerchantDashboard() {
         
         {/* Applications Table */}
         {!isLoading && !noApplications && applications.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-slate-50 text-left">
-                  <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase tracking-wider">ID</th>
-                  <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase tracking-wider">Клиент</th>
-                  <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase tracking-wider">Сумма (₸)</th>
-                  <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase tracking-wider">Дата</th>
-                  <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase tracking-wider">Статус</th>
-                  <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase tracking-wider"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-slate-50 text-left">
+                <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase tracking-wider">ID</th>
+                <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase tracking-wider">Клиент</th>
+                <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase tracking-wider">Сумма (₸)</th>
+                <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase tracking-wider">Дата</th>
+                <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase tracking-wider">Статус</th>
+                <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase tracking-wider"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
                 {applications.map((application) => (
-                  <tr key={application.id} className="hover:bg-slate-50 transition-colors group">
-                    <td className="px-6 py-4 text-sm text-slate-500">#{application.id}</td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm font-medium text-slate-800">{application.customerName}</span>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-semibold text-slate-800">{formatAmount(application.amount)}</td>
-                    <td className="px-6 py-4 text-sm text-slate-500">{application.date}</td>
-                    <td className="px-6 py-4">
+                <tr key={application.id} className="hover:bg-slate-50 transition-colors group">
+                  <td className="px-6 py-4 text-sm text-slate-500">{application.id}</td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm font-medium text-slate-800">{application.customerName}</span>
+                  </td>
+                  <td className="px-6 py-4 text-sm font-semibold text-slate-800">{formatAmount(application.amount)}</td>
+                  <td className="px-6 py-4 text-sm text-slate-500">{application.date}</td>
+                  <td className="px-6 py-4">
                       {getStatusDisplay(application.status)}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="text-slate-400 hover:text-sky-500 transition-colors">
-                        <EllipsisHorizontalIcon className="w-5 h-5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button className="text-slate-400 hover:text-sky-500 transition-colors">
+                      <EllipsisHorizontalIcon className="w-5 h-5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         )}
         
         {/* Pagination */}
         {!isLoading && !error && applications.length > 0 && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 border-t border-slate-200">
-            <span className="text-sm text-slate-500 mb-4 sm:mb-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 border-t border-slate-200">
+          <span className="text-sm text-slate-500 mb-4 sm:mb-0">
               Показано {applications.length} из {totalCount} заявок (стр. {currentPage} из {totalPages || 1})
-            </span>
-            
-            <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={goToPrevPage}
-                  disabled={currentPage === 1}
-                  className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors ${
-                    currentPage === 1 
-                      ? 'text-slate-400 border border-slate-200 cursor-not-allowed' 
-                      : 'text-sky-600 hover:bg-sky-50 border border-sky-200'
-                  }`}
-                >
-                  <ChevronLeftIcon className="w-4 h-4" />
-                </button>
-                
+          </span>
+          
+          <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={goToPrevPage}
+                disabled={currentPage === 1}
+                className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors ${
+                  currentPage === 1 
+                    ? 'text-slate-400 border border-slate-200 cursor-not-allowed' 
+                    : 'text-sky-600 hover:bg-sky-50 border border-sky-200'
+                }`}
+              >
+                <ChevronLeftIcon className="w-4 h-4" />
+              </button>
+              
                 {/* Generate page buttons dynamically */}
                 {[...Array(Math.min(totalPages, 3))].map((_, index) => {
                   const page = index + 1;
                   return (
-                    <button
-                      key={page}
-                      onClick={() => goToPage(page)}
-                      className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all font-medium ${
-                        currentPage === page
-                          ? 'bg-sky-600 text-white font-bold shadow-md'
-                          : 'text-slate-700 hover:bg-sky-50 border border-slate-200'
-                      }`}
-                    >
-                      {page}
-                    </button>
+                <button
+                  key={page}
+                  onClick={() => goToPage(page)}
+                  className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all font-medium ${
+                    currentPage === page
+                      ? 'bg-sky-600 text-white font-bold shadow-md'
+                      : 'text-slate-700 hover:bg-sky-50 border border-slate-200'
+                  }`}
+                >
+                  {page}
+                </button>
                   );
                 })}
-                
-                <button
-                  onClick={goToNextPage}
+              
+              <button
+                onClick={goToNextPage}
                   disabled={currentPage >= totalPages}
                   className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors ${
                     currentPage >= totalPages 
                       ? 'text-slate-400 border border-slate-200 cursor-not-allowed' 
                       : 'text-sky-600 hover:bg-sky-50 border border-sky-200'
                   }`}
-                >
-                  <ChevronRightIcon className="w-4 h-4" />
-                </button>
-              </div>
+              >
+                <ChevronRightIcon className="w-4 h-4" />
+              </button>
             </div>
           </div>
+        </div>
         )}
       </div>
 

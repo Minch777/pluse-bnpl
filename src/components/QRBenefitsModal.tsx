@@ -1,11 +1,13 @@
 import React from 'react';
 import { XMarkIcon, SparklesIcon, CheckIcon } from '@heroicons/react/24/outline';
+import Modal from './Modal';
 
 export default function QRBenefitsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   if (!isOpen) return null;
+  
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="relative bg-white w-full max-w-4xl rounded-xl shadow-2xl p-0 m-4 flex flex-col max-h-[90vh] animate-fadeIn" onClick={e => e.stopPropagation()}>
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="4xl">
+      <div className="relative bg-white w-full rounded-xl shadow-2xl p-0 flex flex-col max-h-[90vh]">
         <div className="absolute top-4 right-4 z-10">
           <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 transition-colors" aria-label="Закрыть">
             <XMarkIcon className="w-6 h-6 text-gray-500" />
@@ -77,6 +79,6 @@ export default function QRBenefitsModal({ isOpen, onClose }: { isOpen: boolean; 
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 } 

@@ -60,9 +60,24 @@ export default function Sidebar({ userRole = 'MERCHANT' }: SidebarProps) {
   const homeLink = userRole === 'ADMIN' ? '/admin/dashboard' : '/merchant/dashboard';
   const { isCollapsed, toggleSidebar, isMobile, sidebarVisible, toggleMobileSidebar } = useContext(SidebarContext);
 
+  // Функция для проверки активного пункта меню без учета параметров URL
+  const isActiveLink = (href: string) => {
+    // Убираем параметры URL из текущего пути
+    const currentPath = pathname?.split('?')[0];
+    return currentPath === href;
+  };
+
   // Функция для открытия страницы и модального окна преимуществ QR-кода
   const handleQRBenefitsButtonClick = () => {
-    router.push('/merchant/terms?show_qr_benefits=true');
+    if (pathname === '/merchant/link') {
+      // Если мы уже на странице, используем событие
+      const event = new CustomEvent('showQRBenefits');
+      window.dispatchEvent(event);
+    } else {
+      // Если переходим с другой страницы, используем URL параметр
+      router.push('/merchant/link?show_qr_benefits=true');
+    }
+    
     if (isMobile) {
       toggleMobileSidebar();
     }
@@ -101,7 +116,7 @@ export default function Sidebar({ userRole = 'MERCHANT' }: SidebarProps) {
           <div className="flex-1 overflow-y-auto pt-5 pb-4">
             <nav className="flex-1 px-4 mb-6">
               {links.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = isActiveLink(item.href);
                 return (
                   <Link
                     key={item.href}
@@ -171,7 +186,7 @@ export default function Sidebar({ userRole = 'MERCHANT' }: SidebarProps) {
 
   // Desktop sidebar - used fixed positioning to ensure it doesn't take up space in the layout
   return (
-    <div className={`fixed top-0 left-0 bottom-0 z-10 ${isCollapsed ? 'w-16' : 'w-64'} transition-all duration-300`}>
+    <div className={`fixed top-0 left-0 bottom-0 z-20 ${isCollapsed ? 'w-16' : 'w-64'} transition-all duration-300`}>
       <div className="h-full border-r border-gray-200 bg-[#f5f7fa]">
         <div className="flex flex-col h-full">
           {/* Logo and Brand */}
@@ -205,7 +220,7 @@ export default function Sidebar({ userRole = 'MERCHANT' }: SidebarProps) {
           <div className="flex flex-col overflow-y-auto flex-1 pt-6 pb-4">
             <nav className="flex-1 px-3 mb-6">
               {links.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = isActiveLink(item.href);
                 return (
                   <Link
                     key={item.href}

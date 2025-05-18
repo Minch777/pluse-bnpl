@@ -68,9 +68,7 @@ export default function MerchantLayout({
       sidebarVisible, 
       toggleMobileSidebar 
     }}>
-      <div className="min-h-screen bg-white relative">
-        {/* Background pattern - removed */}
-        
+      <div className="min-h-screen bg-white">
         {/* Header only visible on mobile */}
         {isMobile && <Header userRole={mockUser.role} />}
         
@@ -80,12 +78,12 @@ export default function MerchantLayout({
         {/* Overlay for mobile sidebar */}
         {isMobile && sidebarVisible && (
           <div 
-            className="fixed inset-0 bg-gray-800 bg-opacity-50 z-20"
+            className="fixed inset-0 z-20 bg-gray-800 bg-opacity-50"
             onClick={toggleMobileSidebar}
           />
         )}
         
-        {/* Main content with padding instead of margin */}
+        {/* Main content */}
         <main 
           className={`relative w-full transition-all duration-300
             ${isMobile ? 'px-4 sm:px-6 py-6' : 'px-6 py-6'} 

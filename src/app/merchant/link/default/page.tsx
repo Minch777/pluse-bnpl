@@ -6,12 +6,12 @@ import { QRCodeSVG } from 'qrcode.react';
 import Button from '@/components/Button';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
-export default function DefaultStorePage() {
+export default function DefaultLinkPage() {
   const [linkCopied, setLinkCopied] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  const applicationLink = 'http://localhost:3000/apply/store123';
+  const applicationLink = 'http://localhost:3000/public/store123';
 
   const handleCopyLink = async () => {
     try {
@@ -30,7 +30,7 @@ export default function DefaultStorePage() {
     if (!canvas) return;
 
     const link = document.createElement('a');
-    link.download = 'pluse-qr-default.png';
+    link.download = 'qr-code-default.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
   };
@@ -57,7 +57,7 @@ export default function DefaultStorePage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h2 className="text-xl font-semibold mb-4">QR-код на заявку</h2>
+          <h2 className="text-xl font-semibold mb-4">Ссылка на заявку</h2>
           <div className="flex items-center gap-4 mb-4">
             <input
               type="text"
@@ -73,7 +73,7 @@ export default function DefaultStorePage() {
             </Button>
           </div>
           <p className="text-sm text-gray-500">
-            Отправьте этот QR-код клиенту для подачи заявки на рассрочку
+            Отправьте эту ссылку клиенту для подачи заявки на рассрочку
           </p>
         </div>
 
