@@ -290,40 +290,65 @@ export default function ApplicationPage({
             params.applicationId
           );
           
-          console.log('Bank statement auto-check result after IIN entry:', checkResult);
+          console.log('Bank statement auto-check result:', checkResult);
+          console.log('Checking for errors in API response:', {
+            hasData: !!checkResult.data,
+            hasErrorCode: !!checkResult.data?.ErrorCode,
+            errorCode: checkResult.data?.ErrorCode,
+            hasErrorMessage: !!checkResult.data?.ErrorMessage,
+            errorMessage: checkResult.data?.ErrorMessage,
+            success: checkResult.success
+          });
           
-          // Check if the response indicates success
+          // Check if there are errors in data first (business logic errors)
+          if (checkResult.data?.ErrorCode || checkResult.data?.ErrorMessage) {
+            const errorMessage = checkResult.data.ErrorMessage || 'Ошибка при проверке выписки';
+            console.log('API returned business logic error:', checkResult.data.ErrorCode, errorMessage);
+            throw new Error(errorMessage);
+          }
+          
+          // Then check if the response indicates technical success
           if (!checkResult.success) {
-            // If success is false, treat as error
             const errorMessage = checkResult.message || checkResult.error || 'Ошибка при проверке выписки';
             console.log('API returned success: false, treating as error:', errorMessage);
             throw new Error(errorMessage);
           }
           
-          // Also check for ErrorCode in data - but only for error codes that indicate failure
-          if (checkResult.data?.ErrorCode && checkResult.data.ErrorCode >= 400) {
-            const errorMessage = checkResult.data.ErrorMessage || 'Ошибка при проверке выписки';
-            console.log('API returned error ErrorCode in data:', checkResult.data.ErrorCode, errorMessage);
-            throw new Error(errorMessage);
-          }
-          
+          console.log('Bank statement check successful, setting result');
           setStatementCheckResult(checkResult);
           
         } catch (statementError: any) {
           console.error('Error auto-checking bank statement after IIN entry:', statementError);
+          console.log('Error details:', {
+            errorMessage: statementError.message,
+            errorName: statementError.name,
+            fullError: statementError
+          });
           
           // Handle specific error types
           let errorMessage = '';
+          console.log('Checking error message for date-related keywords:', {
+            message: statementError.message,
+            includesДата: statementError.message?.includes('дата'),
+            includesPeriod: statementError.message?.includes('period'),
+            includesУстарела: statementError.message?.includes('устарела'),
+            includesDate: statementError.message?.includes('date'),
+            includesWrongDate: statementError.message?.includes('wrong date')
+          });
+          
           if (statementError.message && (statementError.message.includes('дата') || 
               statementError.message.includes('period') ||
               statementError.message.includes('устарела') ||
               statementError.message.includes('date') ||
               statementError.message.includes('wrong date'))) {
             errorMessage = 'Выписка содержит устаревшие данные. Пожалуйста, загрузите более актуальную выписку с данными по сегодняшнюю дату.';
+            console.log('Setting date-related error message');
           } else {
             errorMessage = 'Не удалось обработать выписку. Не беспокойтесь, вы можете продолжить без неё — это не повлияет на рассмотрение заявки.';
+            console.log('Setting generic error message');
           }
           
+          console.log('Final error message to display:', errorMessage);
           setStatementCheckError(errorMessage);
         } finally {
           setIsCheckingStatement(false);
@@ -445,39 +470,64 @@ export default function ApplicationPage({
           );
           
           console.log('Bank statement auto-check result:', checkResult);
+          console.log('Checking for errors in API response:', {
+            hasData: !!checkResult.data,
+            hasErrorCode: !!checkResult.data?.ErrorCode,
+            errorCode: checkResult.data?.ErrorCode,
+            hasErrorMessage: !!checkResult.data?.ErrorMessage,
+            errorMessage: checkResult.data?.ErrorMessage,
+            success: checkResult.success
+          });
           
-          // Check if the response indicates success
+          // Check if there are errors in data first (business logic errors)
+          if (checkResult.data?.ErrorCode || checkResult.data?.ErrorMessage) {
+            const errorMessage = checkResult.data.ErrorMessage || 'Ошибка при проверке выписки';
+            console.log('API returned business logic error:', checkResult.data.ErrorCode, errorMessage);
+            throw new Error(errorMessage);
+          }
+          
+          // Then check if the response indicates technical success
           if (!checkResult.success) {
-            // If success is false, treat as error
             const errorMessage = checkResult.message || checkResult.error || 'Ошибка при проверке выписки';
             console.log('API returned success: false, treating as error:', errorMessage);
             throw new Error(errorMessage);
           }
           
-          // Also check for ErrorCode in data - but only for error codes that indicate failure
-          if (checkResult.data?.ErrorCode && checkResult.data.ErrorCode >= 400) {
-            const errorMessage = checkResult.data.ErrorMessage || 'Ошибка при проверке выписки';
-            console.log('API returned error ErrorCode in data:', checkResult.data.ErrorCode, errorMessage);
-            throw new Error(errorMessage);
-          }
-          
+          console.log('Bank statement check successful, setting result');
           setStatementCheckResult(checkResult);
           
         } catch (statementError: any) {
           console.error('Error auto-checking bank statement:', statementError);
+          console.log('Error details:', {
+            errorMessage: statementError.message,
+            errorName: statementError.name,
+            fullError: statementError
+          });
           
           // Handle specific error types
           let errorMessage = '';
+          console.log('Checking error message for date-related keywords:', {
+            message: statementError.message,
+            includesДата: statementError.message?.includes('дата'),
+            includesPeriod: statementError.message?.includes('period'),
+            includesУстарела: statementError.message?.includes('устарела'),
+            includesDate: statementError.message?.includes('date'),
+            includesWrongDate: statementError.message?.includes('wrong date')
+          });
+          
           if (statementError.message && (statementError.message.includes('дата') || 
               statementError.message.includes('period') ||
               statementError.message.includes('устарела') ||
               statementError.message.includes('date') ||
               statementError.message.includes('wrong date'))) {
             errorMessage = 'Выписка содержит устаревшие данные. Пожалуйста, загрузите более актуальную выписку с данными по сегодняшнюю дату.';
+            console.log('Setting date-related error message');
           } else {
             errorMessage = 'Не удалось обработать выписку. Не беспокойтесь, вы можете продолжить без неё — это не повлияет на рассмотрение заявки.';
+            console.log('Setting generic error message');
           }
           
+          console.log('Final error message to display:', errorMessage);
           setStatementCheckError(errorMessage);
         } finally {
           setIsCheckingStatement(false);
@@ -771,22 +821,30 @@ export default function ApplicationPage({
               );
               
               console.log('Bank statement check result:', checkResult);
+              console.log('Checking for errors in API response:', {
+                hasData: !!checkResult.data,
+                hasErrorCode: !!checkResult.data?.ErrorCode,
+                errorCode: checkResult.data?.ErrorCode,
+                hasErrorMessage: !!checkResult.data?.ErrorMessage,
+                errorMessage: checkResult.data?.ErrorMessage,
+                success: checkResult.success
+              });
               
-              // Check if the response indicates success
+              // Check if there are errors in data first (business logic errors)
+              if (checkResult.data?.ErrorCode || checkResult.data?.ErrorMessage) {
+                const errorMessage = checkResult.data.ErrorMessage || 'Ошибка при проверке выписки';
+                console.log('API returned business logic error:', checkResult.data.ErrorCode, errorMessage);
+                throw new Error(errorMessage);
+              }
+              
+              // Then check if the response indicates technical success
               if (!checkResult.success) {
-                // If success is false, treat as error
                 const errorMessage = checkResult.message || checkResult.error || 'Ошибка при проверке выписки';
                 console.log('API returned success: false, treating as error:', errorMessage);
                 throw new Error(errorMessage);
               }
               
-              // Also check for ErrorCode in data - but only for error codes that indicate failure
-              if (checkResult.data?.ErrorCode && checkResult.data.ErrorCode >= 400) {
-                const errorMessage = checkResult.data.ErrorMessage || 'Ошибка при проверке выписки';
-                console.log('API returned error ErrorCode in data:', checkResult.data.ErrorCode, errorMessage);
-                throw new Error(errorMessage);
-              }
-              
+              console.log('Bank statement check successful, setting result');
               setStatementCheckResult(checkResult);
               
               // Show success message briefly
@@ -794,19 +852,36 @@ export default function ApplicationPage({
               
             } catch (statementError: any) {
               console.error('Error checking bank statement:', statementError);
+              console.log('Error details in handleNext:', {
+                errorMessage: statementError.message,
+                errorName: statementError.name,
+                fullError: statementError
+              });
               
               // Handle specific error types
               let errorMessage = '';
+              console.log('Checking error message for date-related keywords in handleNext:', {
+                message: statementError.message,
+                includesДата: statementError.message?.includes('дата'),
+                includesPeriod: statementError.message?.includes('period'),
+                includesУстарела: statementError.message?.includes('устарела'),
+                includesDate: statementError.message?.includes('date'),
+                includesWrongDate: statementError.message?.includes('wrong date')
+              });
+              
               if (statementError.message && (statementError.message.includes('дата') || 
                   statementError.message.includes('period') ||
                   statementError.message.includes('устарела') ||
                   statementError.message.includes('date') ||
                   statementError.message.includes('wrong date'))) {
                 errorMessage = 'Выписка содержит устаревшие данные. Пожалуйста, загрузите более актуальную выписку с данными по сегодняшнюю дату.';
+                console.log('Setting date-related error message in handleNext');
               } else {
                 errorMessage = 'Не удалось обработать выписку. Не беспокойтесь, вы можете продолжить без неё — это не повлияет на рассмотрение заявки.';
+                console.log('Setting generic error message in handleNext');
               }
               
+              console.log('Final error message to display in handleNext:', errorMessage);
               setStatementCheckError(errorMessage);
               
               // Wait a moment to show error, then continue
