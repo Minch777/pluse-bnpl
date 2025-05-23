@@ -1504,8 +1504,9 @@ export default function ApplicationPage({
                 <XCircleIcon className="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-medium text-amber-700">
-                    {statementCheckError.includes('дата') || statementCheckError.includes('устарела') 
-                      ? '📅 Нужна более свежая выписка' 
+                    {statementCheckError.includes('дата') || statementCheckError.includes('устарела') ||
+                     statementCheckError.includes('date') || statementCheckError.includes('wrong date')
+                      ? 'Данные в выписке устарели' 
                       : '⚠️ Выписка не обработана'
                     }
                   </p>
