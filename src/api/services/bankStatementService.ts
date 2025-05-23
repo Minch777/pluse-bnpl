@@ -74,7 +74,9 @@ const bankStatementService = {
       const result: BankStatementCheckResponse = {
         success: !hasErrors, // Success if no explicit errors
         data: apiData,
-        ...apiData // Include any additional fields from API
+        // Don't spread apiData here as it might override our success value
+        message: apiData.message,
+        error: apiData.error
       };
       
       console.log('Processed bank statement response:', result);
