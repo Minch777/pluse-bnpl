@@ -116,7 +116,7 @@ const bankStatementService = {
       
       console.log('Processed bank statement response:', result);
       return result;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in checkBankStatement:', error);
       
       // Log detailed error information
@@ -124,8 +124,54 @@ const bankStatementService = {
         console.error('Error response data:', error.response.data);
         console.error('Error response status:', error.response.status);
         console.error('Error response headers:', error.response.headers);
+        
+        // Check if we have data in the error response
+        const apiData = error.response.data;
+        if (apiData) {
+          console.log('Found data in error response, processing it:', apiData);
+          
+          console.log('Analyzing API response for success determination (from error response):', {
+            apiDataSuccess: apiData.success,
+            hasErrorCode: !!apiData.ErrorCode,
+            hasErrorMessage: !!apiData.ErrorMessage,
+            scanQRStatus: apiData.ScanQR?.[0]?.Status,
+            fullApiData: apiData
+          });
+          
+          // Determine success based on the same logic as in try block
+          let isSuccessful = false;
+          
+          if (apiData.success === true) {
+            // API says success, now check for business logic errors
+            const hasErrors = !!(apiData.ErrorCode || apiData.ErrorMessage);
+            
+            if (!hasErrors) {
+              // No explicit errors, check ScanQR status if available
+              if (apiData.ScanQR && apiData.ScanQR.length > 0) {
+                // If ScanQR exists, check its status
+                isSuccessful = apiData.ScanQR[0].Status === "OK";
+              } else {
+                // No ScanQR data, but API says success and no errors - consider successful
+                isSuccessful = true;
+              }
+            }
+          }
+          
+          console.log('Final success determination (from error response):', isSuccessful);
+          
+          const result: BankStatementCheckResponse = {
+            success: isSuccessful,
+            data: apiData,
+            message: apiData.message,
+            error: apiData.error
+          };
+          
+          console.log('Processed bank statement response (from error response):', result);
+          return result;
+        }
       }
       
+      // If no usable data in error response, throw the original error
       throw error;
     }
   }
