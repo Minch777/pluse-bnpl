@@ -65,8 +65,31 @@ const bankStatementService = {
       console.log('Response data:', response.data);
       console.log('Response status:', response.status);
       
-      // Return the response data
-      return response.data || response;
+      // Check HTTP status first
+      if (response.status >= 200 && response.status < 300) {
+        // HTTP success - return the data with proper success flag
+        const apiData = response.data || {};
+        
+        // If API returns data, we consider it successful unless there are explicit errors
+        const hasErrors = !!(apiData.ErrorCode || apiData.ErrorMessage);
+        
+        const result: BankStatementCheckResponse = {
+          success: !hasErrors, // Success if no explicit errors
+          data: apiData,
+          ...apiData // Include any additional fields from API
+        };
+        
+        console.log('Processed bank statement response:', result);
+        return result;
+      } else {
+        // HTTP error
+        console.log('HTTP error status:', response.status);
+        return {
+          success: false,
+          error: `HTTP Error: ${response.status}`,
+          data: response.data
+        };
+      }
     } catch (error) {
       console.error('Error in checkBankStatement:', error);
       
