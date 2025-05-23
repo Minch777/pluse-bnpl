@@ -83,24 +83,21 @@ const bankStatementService = {
       });
       
       // Determine success based on multiple factors:
-      // 1. API should return success: true
-      // 2. No explicit error codes/messages
-      // 3. If ScanQR exists, it should have Status: "OK"
+      // 1. If ScanQR exists with Status "OK" - most reliable indicator
+      // 2. API should return success: true
+      // 3. No explicit error codes/messages
       let isSuccessful = false;
       
-      if (apiData.success === true) {
+      // First try to find success based on ScanQR status (most reliable indicator)
+      if (apiData.ScanQR && apiData.ScanQR.length > 0 && apiData.ScanQR[0].Status === "OK") {
+        console.log('Found ScanQR with Status OK - considering successful');
+        isSuccessful = true;
+      } else if (apiData.success === true) {
+        console.log('Using API success field');
         // API says success, now check for business logic errors
         const hasErrors = !!(apiData.ErrorCode || apiData.ErrorMessage);
-        
         if (!hasErrors) {
-          // No explicit errors, check ScanQR status if available
-          if (apiData.ScanQR && apiData.ScanQR.length > 0) {
-            // If ScanQR exists, check its status
-            isSuccessful = apiData.ScanQR[0].Status === "OK";
-          } else {
-            // No ScanQR data, but API says success and no errors - consider successful
-            isSuccessful = true;
-          }
+          isSuccessful = true;
         }
       }
       
@@ -125,6 +122,23 @@ const bankStatementService = {
         console.error('Error response status:', error.response.status);
         console.error('Error response headers:', error.response.headers);
         
+        // Add detailed logging of the entire error.response structure
+        console.log('Full error.response structure:', {
+          data: error.response.data,
+          status: error.response.status,
+          statusText: error.response.statusText,
+          headers: error.response.headers,
+          config: error.response.config
+        });
+        
+        // Check if success is at the top level of error.response
+        console.log('Checking success field locations:', {
+          'error.response.success': error.response.success,
+          'error.response.data.success': error.response.data?.success,
+          'error.response.data type': typeof error.response.data,
+          'error.response.data keys': error.response.data ? Object.keys(error.response.data) : 'no data'
+        });
+        
         // Check if we have data in the error response
         const apiData = error.response.data;
         if (apiData) {
@@ -141,17 +155,23 @@ const bankStatementService = {
           // Determine success based on the same logic as in try block
           let isSuccessful = false;
           
-          if (apiData.success === true) {
-            // API says success, now check for business logic errors
+          // First try to find success based on ScanQR status (most reliable indicator)
+          if (apiData.ScanQR && apiData.ScanQR.length > 0 && apiData.ScanQR[0].Status === "OK") {
+            console.log('Found ScanQR with Status OK - considering successful');
+            isSuccessful = true;
+          } else if (apiData.success === true) {
+            // Fallback to API success field
+            console.log('Using API success field');
             const hasErrors = !!(apiData.ErrorCode || apiData.ErrorMessage);
-            
             if (!hasErrors) {
-              // No explicit errors, check ScanQR status if available
-              if (apiData.ScanQR && apiData.ScanQR.length > 0) {
-                // If ScanQR exists, check its status
-                isSuccessful = apiData.ScanQR[0].Status === "OK";
-              } else {
-                // No ScanQR data, but API says success and no errors - consider successful
+              isSuccessful = true;
+            }
+          } else {
+            // Check if the entire error.response has success field
+            if (error.response.success === true) {
+              console.log('Found success at error.response level');
+              const hasErrors = !!(apiData.ErrorCode || apiData.ErrorMessage);
+              if (!hasErrors) {
                 isSuccessful = true;
               }
             }
