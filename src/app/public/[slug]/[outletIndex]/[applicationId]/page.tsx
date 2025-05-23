@@ -221,15 +221,17 @@ export default function ApplicationPage({
     }
   }, [currentStep]);
   
-  // Timer countdown
+  // Reset timer effect
   useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
     if (resendTimer > 0) {
-      const timer = setTimeout(() => {
-        setResendTimer(resendTimer - 1);
+      interval = setInterval(() => {
+        setResendTimer(prev => prev - 1);
       }, 1000);
-      
-      return () => clearTimeout(timer);
     }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [resendTimer]);
   
   // Verify OTP using the sign endpoint when 6 digits are entered
@@ -265,6 +267,16 @@ export default function ApplicationPage({
       verifyOTP();
     }
   }, [formData.otp, currentStep, params.applicationId]);
+  
+  // Helper function to generate date error message
+  const getDateErrorMessage = () => {
+    const currentDate = new Date().toLocaleDateString('ru-RU', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    });
+    return `Пожалуйста, загрузите актуальную выписку с данными по ${currentDate}. Вы можете продолжить оформление заявки без добавления выписки.`;
+  };
   
   // Auto-check bank statement when IIN is entered after file upload
   useEffect(() => {
@@ -341,7 +353,7 @@ export default function ApplicationPage({
               statementError.message.includes('устарела') ||
               statementError.message.includes('date') ||
               statementError.message.includes('wrong date'))) {
-            errorMessage = 'Выписка содержит устаревшие данные. Пожалуйста, загрузите более актуальную выписку с данными по сегодняшнюю дату.';
+            errorMessage = getDateErrorMessage();
             console.log('Setting date-related error message');
           } else {
             errorMessage = 'Не удалось обработать выписку. Не беспокойтесь, вы можете продолжить без неё — это не повлияет на рассмотрение заявки.';
@@ -520,7 +532,7 @@ export default function ApplicationPage({
               statementError.message.includes('устарела') ||
               statementError.message.includes('date') ||
               statementError.message.includes('wrong date'))) {
-            errorMessage = 'Выписка содержит устаревшие данные. Пожалуйста, загрузите более актуальную выписку с данными по сегодняшнюю дату.';
+            errorMessage = getDateErrorMessage();
             console.log('Setting date-related error message');
           } else {
             errorMessage = 'Не удалось обработать выписку. Не беспокойтесь, вы можете продолжить без неё — это не повлияет на рассмотрение заявки.';
@@ -874,7 +886,7 @@ export default function ApplicationPage({
                   statementError.message.includes('устарела') ||
                   statementError.message.includes('date') ||
                   statementError.message.includes('wrong date'))) {
-                errorMessage = 'Выписка содержит устаревшие данные. Пожалуйста, загрузите более актуальную выписку с данными по сегодняшнюю дату.';
+                errorMessage = getDateErrorMessage();
                 console.log('Setting date-related error message in handleNext');
               } else {
                 errorMessage = 'Не удалось обработать выписку. Не беспокойтесь, вы можете продолжить без неё — это не повлияет на рассмотрение заявки.';
@@ -1510,13 +1522,25 @@ export default function ApplicationPage({
                       : '⚠️ Выписка не обработана'
                     }
                   </p>
-                  <p className="text-xs text-amber-600 mt-1">{statementCheckError}</p>
-                  {(statementCheckError.includes('дата') || statementCheckError.includes('устарела') || 
-                    statementCheckError.includes('date') || statementCheckError.includes('wrong date')) && (
-                    <p className="text-xs text-slate-500 mt-2">
-                      ✓ Заявка обрабатывается в обычном режиме — это не влияет на шансы одобрения
-                    </p>
-                  )}
+                  <div className="mt-1">
+                    {(statementCheckError.includes('дата') || statementCheckError.includes('устарела') || 
+                      statementCheckError.includes('date') || statementCheckError.includes('wrong date')) ? (
+                      <>
+                        <p className="text-xs text-amber-600">
+                          Пожалуйста, загрузите актуальную выписку с данными по {new Date().toLocaleDateString('ru-RU', { 
+                            day: '2-digit', 
+                            month: '2-digit', 
+                            year: 'numeric' 
+                          })}.
+                        </p>
+                        <p className="text-xs text-slate-500 mt-2">
+                          Вы можете продолжить оформление заявки без добавления выписки.
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-xs text-amber-600">{statementCheckError}</p>
+                    )}
+                  </div>
                   {(statementCheckError.includes('дата') || statementCheckError.includes('устарела') || 
                     statementCheckError.includes('date') || statementCheckError.includes('wrong date')) && (
                     <button
