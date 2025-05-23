@@ -16,15 +16,22 @@ import {
   DocumentTextIcon,
   PlusIcon,
   CurrencyDollarIcon,
+  BanknotesIcon,
   ChartBarIcon,
   UserGroupIcon,
   CalendarDaysIcon,
-  XMarkIcon
+  XMarkIcon,
+  UserCircleIcon,
+  PhoneIcon,
+  IdentificationIcon,
+  LinkIcon
 } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { SidebarContext } from '@/app/merchant/layout';
-import applicationService, { Application, ApplicationMetrics } from '@/api/services/applicationService';
+import applicationService, { Application, ApplicationMetrics, ApplicationFilterParams, SingleApplication } from '@/api/services/applicationService';
 import merchantService from '@/api/services/merchantService';
+import StatusBadge from '@/components/StatusBadge';
+import { ApplicationStatus, statusMappings } from '@/utils/statusMappings';
 import Link from 'next/link';
 
 // Modern color palette - matching link page
@@ -49,7 +56,7 @@ const colors = {
 };
 
 // Обновляем тип, добавляя произвольный период
-type Period = 'today' | 'yesterday' | 'week' | 'month' | 'custom';
+type Period = 'all' | 'today' | 'yesterday' | 'week' | 'month' | 'custom';
 
 // Stat Card component
 function StatCard({ 
@@ -89,74 +96,370 @@ function DatePickerModal({
   isOpen,
   onClose,
   onApply,
+  startDateValue,
+  endDateValue
 }: {
   isOpen: boolean;
   onClose: () => void;
   onApply: (startDate: string, endDate: string) => void;
+  startDateValue: string;
+  endDateValue: string;
 }) {
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  // Функция для получения сегодняшней даты в формате YYYY-MM-DD
+  const getTodayDate = (): string => {
+    const today = new Date();
+    return formatDateForInput(today);
+  };
+  
+  // Функция для получения даты месяц назад в формате YYYY-MM-DD
+  const getMonthAgoDate = (): string => {
+    const today = new Date();
+    const monthAgo = new Date(today);
+    monthAgo.setMonth(monthAgo.getMonth() - 1);
+    return formatDateForInput(monthAgo);
+  };
+  
+  // Форматирует дату для input type="date"
+  const formatDateForInput = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const [startDate, setStartDate] = useState(startDateValue || getMonthAgoDate());
+  const [endDate, setEndDate] = useState(endDateValue || getTodayDate());
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      // Если даты не были выбраны ранее, устанавливаем дефолтные значения
+      setStartDate(startDateValue || getMonthAgoDate());
+      setEndDate(endDateValue || getTodayDate());
+      setError('');
+    }
+  }, [isOpen, startDateValue, endDateValue]);
+
+  // Валидация дат при изменении
+  const validateDates = () => {
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      if (start > end) {
+        setError('Начальная дата не может быть позже конечной');
+        return false;
+      }
+    }
+    
+    setError('');
+    return true;
+  };
+
+  // Обработчики изменения дат
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setStartDate(e.target.value);
+  };
+
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEndDate(e.target.value);
+  };
+
+  // Проверяем валидацию при изменении дат
+  useEffect(() => {
+    validateDates();
+  }, [startDate, endDate]);
 
   if (!isOpen) return null;
+
+  const isValid = startDate && endDate && !error;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4">
         <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
         
-        <div className="relative bg-white w-full max-w-md rounded-xl p-6 shadow-xl transition-all transform animate-fadeIn">
-          <div className="flex justify-between items-center mb-5">
-            <h2 className="text-lg font-medium text-slate-800">Выберите период</h2>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-500 transition-colors">
+        <div className="relative bg-white w-full max-w-md rounded-xl shadow-xl transition-all transform animate-fadeIn">
+          <div className="flex justify-between items-center py-4 px-6 border-b border-slate-100">
+            <h2 className="text-lg font-semibold text-slate-800">Выберите даты</h2>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-500 transition-colors rounded-md hover:bg-gray-100 p-1">
               <XMarkIcon className="h-5 w-5" />
             </button>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Начальная дата
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full rounded-md border-slate-300 focus:border-sky-500 focus:ring-sky-500 sm:text-sm"
-              />
+          <div className="p-6">
+            <div className="space-y-6">
+              {/* Начальная дата с иконкой и подписью */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Начальная дата
+                </label>
+                <div className="relative rounded-md border border-slate-300 hover:border-sky-500 transition-all focus-within:border-sky-500 focus-within:ring-1 focus-within:ring-sky-500 bg-white overflow-hidden">
+                  <input
+                    id="start-date-input"
+                    type="date"
+                    value={startDate}
+                    onChange={handleStartDateChange}
+                    className="pl-4 pr-4 py-3 block w-full rounded-md border-0 shadow-none focus:outline-none focus:ring-0 text-base text-black h-12"
+                    style={{ 
+                      fontSize: '16px', 
+                      appearance: 'none',
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                      backgroundImage: 'none',
+                      backgroundSize: '0',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Конечная дата с иконкой и подписью */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Конечная дата
+                </label>
+                <div className="relative rounded-md border border-slate-300 hover:border-sky-500 transition-all focus-within:border-sky-500 focus-within:ring-1 focus-within:ring-sky-500 bg-white overflow-hidden">
+                  <input
+                    id="end-date-input"
+                    type="date"
+                    value={endDate}
+                    onChange={handleEndDateChange}
+                    className="pl-4 pr-4 py-3 block w-full rounded-md border-0 shadow-none focus:outline-none focus:ring-0 text-base text-black h-12"
+                    style={{ 
+                      fontSize: '16px', 
+                      appearance: 'none',
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                      backgroundImage: 'none',
+                      backgroundSize: '0',
+                    }}
+                  />
+                </div>
+              </div>
+              
+              {/* Сообщение об ошибке */}
+              {error && (
+                <div className="bg-red-50 p-3 rounded-lg text-sm text-red-800 flex items-center">
+                  <div className="p-1 rounded-md bg-red-100 mr-2">
+                    <XMarkIcon className="h-4 w-4 text-red-500" />
+                  </div>
+                  <span>{error}</span>
+                </div>
+              )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Конечная дата
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full rounded-md border-slate-300 focus:border-sky-500 focus:ring-sky-500 sm:text-sm"
-              />
+            <div className="flex justify-end gap-3 pt-5 mt-6 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (validateDates()) {
+                    onApply(startDate, endDate);
+                    onClose();
+                  }
+                }}
+                disabled={!isValid}
+                className={`px-4 py-2.5 text-sm font-medium text-white rounded-lg transition-all ${
+                  isValid 
+                    ? 'bg-sky-600 hover:bg-sky-700' 
+                    : 'bg-slate-300 cursor-not-allowed'
+                }`}
+              >
+                Применить
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Компонент модального окна с информацией о заявке
+function ApplicationModal({
+  isOpen,
+  onClose,
+  application
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  application: SingleApplication | null;
+}) {
+  if (!isOpen || !application) return null;
+
+  const formatAmount = (amount: number) => {
+    return new Intl.NumberFormat('ru-RU').format(amount) + ' ₸';
+  };
+
+  const getLoanTypeText = (type: string) => {
+    return type === 'LOAN' ? 'Кредит' : 'Рассрочка';
+  };
+
+  const getStatusDisplay = (status: string) => {
+    if (status in statusMappings) {
+      return <StatusBadge status={status as ApplicationStatus} size="md" />;
+    }
+    return (
+      <span className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
+        {status}
+      </span>
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen px-4 py-8">
+        {/* Backdrop */}
+        <div 
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300 animate-backdrop-in" 
+          onClick={onClose}
+        />
+        
+        {/* Modal */}
+        <div className="relative bg-white w-full max-w-2xl rounded-xl shadow-xl border border-gray-200 transition-all duration-300 transform animate-modal-in">
+          {/* Header */}
+          <div className="px-6 py-5 border-b border-gray-100">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-sky-50 rounded-lg">
+                  <DocumentTextIcon className="h-6 w-6 text-sky-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Заявка #{application.shortId}</h2>
+                  <p className="text-gray-600 text-sm">Детальная информация</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {getStatusDisplay(application.status)}
+                <button 
+                  onClick={onClose} 
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors rounded-lg"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
-            >
-              Отмена
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onApply(startDate, endDate);
-                onClose();
-              }}
-              className="px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-md hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-all"
-              disabled={!startDate || !endDate}
-            >
-              Применить
-            </button>
+          <div className="p-6 space-y-6">
+            {/* Main details */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Amount */}
+              <div className="bg-sky-50 border border-sky-100 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <CurrencyDollarIcon className="h-5 w-5 text-sky-600" />
+                  <span className="text-sm font-medium text-sky-700">Сумма</span>
+                </div>
+                <p className="text-xl font-semibold text-gray-900">{formatAmount(application.amount)}</p>
+              </div>
+
+              {/* Type */}
+              <div className="bg-sky-50 border border-sky-100 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <DocumentIcon className="h-5 w-5 text-sky-600" />
+                  <span className="text-sm font-medium text-sky-700">Тип</span>
+                </div>
+                <p className="text-lg font-medium text-gray-900">{getLoanTypeText(application.loanType || application.type || '')}</p>
+              </div>
+
+              {/* Term */}
+              <div className="bg-sky-50 border border-sky-100 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <CalendarDaysIcon className="h-5 w-5 text-sky-600" />
+                  <span className="text-sm font-medium text-sky-700">Срок</span>
+                </div>
+                <p className="text-lg font-medium text-gray-900">{application.term} мес.</p>
+              </div>
+            </div>
+
+            {/* Client information */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Данные клиента</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Personal info */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                      Фамилия
+                    </label>
+                    <p className="text-gray-900 font-medium">{application.lastName || 'Не указано'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                      Имя
+                    </label>
+                    <p className="text-gray-900 font-medium">{application.firstName || 'Не указано'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                      Отчество
+                    </label>
+                    <p className="text-gray-900 font-medium">{application.middleName || 'Не указано'}</p>
+                  </div>
+                </div>
+
+                {/* Contact info */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                      <IdentificationIcon className="h-3 w-3" />
+                      ИИН
+                    </label>
+                    <p className="text-gray-900 font-mono font-medium">{application.iin || 'Не указано'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                      <PhoneIcon className="h-3 w-3" />
+                      Телефон
+                    </label>
+                    <p className="text-gray-900 font-medium">{application.phone || 'Не указано'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                      Дата создания
+                    </label>
+                    <p className="text-gray-900 font-medium">
+                      {new Date(application.createdAt).toLocaleDateString('ru-RU', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full sm:w-auto px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              >
+                Закрыть
+              </button>
+              <a
+                href={`/public/application/${application.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-sky-600 border border-sky-600 rounded-lg hover:bg-sky-700 hover:border-sky-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+              >
+                <LinkIcon className="h-4 w-4" />
+                Перейти к заявке
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -165,7 +468,7 @@ function DatePickerModal({
 }
 
 export default function MerchantDashboard() {
-  const [selectedPeriod, setSelectedPeriod] = useState<Period>('week');
+  const [selectedPeriod, setSelectedPeriod] = useState<Period>('all');
   const router = useRouter();
   const { isMobile } = useContext(SidebarContext);
   const [currentPage, setCurrentPage] = useState(1);
@@ -181,11 +484,12 @@ export default function MerchantDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [noApplications, setNoApplications] = useState(false);
   
+  // Add search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  
   // Pagination state
   const [limit] = useState(10);
-  
-  // Filter state
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   
   // Добавляем состояния для работы с произвольным периодом
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
@@ -195,6 +499,46 @@ export default function MerchantDashboard() {
   });
 
   const [merchant, setMerchant] = useState<any>(null);
+  const [selectedApplication, setSelectedApplication] = useState<SingleApplication | null>(null);
+  const [isApplicationModalOpen, setIsApplicationModalOpen] = useState(false);
+  const [loadingApplicationDetails, setLoadingApplicationDetails] = useState(false);
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+  
+  // Reset to page 1 when search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchQuery]);
+
+  // Function to get period parameter for API based on selected period
+  const getPeriodParams = (): Partial<ApplicationFilterParams> => {
+    switch(selectedPeriod) {
+      case 'all':
+        return {}; // No filters for "all" option
+      case 'today':
+        return { period: 'day' };
+      case 'yesterday':
+        return { period: 'yesterday' };
+      case 'week':
+        return { period: 'week' };
+      case 'month':
+        return { period: 'month' };
+      case 'custom':
+        return { 
+          date_from: customDateRange.start ? `${customDateRange.start}T00:00:00Z` : undefined,
+          date_to: customDateRange.end ? `${customDateRange.end}T23:59:59Z` : undefined 
+        };
+      default:
+        return {};
+    }
+  };
 
   // Function to load application data
   const loadApplicationsData = async () => {
@@ -203,14 +547,33 @@ export default function MerchantDashboard() {
       setError(null);
       setNoApplications(false);
       
-      console.log('Fetching applications from API...');
+      // Get period parameters
+      const periodParams = getPeriodParams();
       
-      // Fetch applications with pagination and filters
-      const applicationsData = await applicationService.getApplications({
+      // Create params object with search parameter only if it's not empty
+      const apiParams: ApplicationFilterParams = {
         page: currentPage,
         limit,
-        status: statusFilter
-      });
+        ...periodParams,
+      };
+      
+      // Check if search query is possibly an ID (starts with # followed by numbers only)
+      const idPattern = /^#?(\d+)$/;
+      const idMatch = debouncedSearchQuery.trim().match(idPattern);
+      
+      if (idMatch) {
+        // If search is in ID format, extract the number and search by shortId
+        apiParams.shortId = parseInt(idMatch[1]);
+        console.log('Searching by ID:', apiParams.shortId);
+      } else if (debouncedSearchQuery.trim()) {
+        // Otherwise search by client name
+        apiParams.client_name = debouncedSearchQuery.trim();
+      }
+      
+      console.log('Fetching applications with params:', apiParams);
+      
+      // Fetch applications with pagination, filters, period and search
+      const applicationsData = await applicationService.getApplications(apiParams);
       
       console.log('Applications data received:', applicationsData);
       
@@ -232,9 +595,9 @@ export default function MerchantDashboard() {
         setNoApplications(true);
       }
       
-      // Fetch metrics for the dashboard
-      console.log('Fetching metrics from API...');
-      const metricsData = await applicationService.getApplicationMetrics();
+      // Fetch metrics for the dashboard with the same period filters (without search)
+      console.log('Fetching metrics from API with period:', periodParams);
+      const metricsData = await applicationService.getApplicationMetrics(periodParams);
       console.log('Metrics data received:', metricsData);
       setMetrics(metricsData);
       
@@ -272,7 +635,7 @@ export default function MerchantDashboard() {
   useEffect(() => {
     loadApplicationsData();
     fetchMerchantData();
-  }, [currentPage, limit, statusFilter, selectedPeriod]);
+  }, [currentPage, limit, selectedPeriod, customDateRange.start, customDateRange.end, debouncedSearchQuery]);
 
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('ru-RU').format(amount);
@@ -280,11 +643,12 @@ export default function MerchantDashboard() {
 
   const getPeriodLabel = () => {
     switch(selectedPeriod) {
+      case 'all': return 'Все время';
       case 'today': return 'Сегодня';
       case 'yesterday': return 'Вчера';
       case 'week': return 'За неделю';
       case 'month': return 'За месяц';
-      case 'custom': return `${customDateRange.start} - ${customDateRange.end}`;
+      case 'custom': return `${customDateRange.start ? customDateRange.start.split('-').reverse().join('.') : ''} - ${customDateRange.end ? customDateRange.end.split('-').reverse().join('.') : ''}`;
       default: return 'За период';
     }
   };
@@ -320,64 +684,66 @@ export default function MerchantDashboard() {
   };
 
   const getStatusDisplay = (status: string) => {
-    console.log('Processing status:', status);
+    // Добавляем логирование для отладки
+    console.log('Status received:', status, 'Type:', typeof status);
+    console.log('Status in statusMappings?', status in statusMappings);
+    console.log('Available statusMappings keys:', Object.keys(statusMappings));
     
-    // Преобразуем в нижний регистр для обработки в switch
-    const normalizedStatus = status.toLowerCase();
+    // Проверяем, есть ли такой статус в statusMappings
+    if (status in statusMappings) {
+      return <StatusBadge status={status as ApplicationStatus} size="sm" />;
+    }
+    // Если статус неизвестен — показываем его текстом
+    return (
+      <span className="inline-block px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">
+        {status}
+      </span>
+    );
+  };
     
-    switch (normalizedStatus) {
-      case 'issued':
-      case 'approved':
-      case 'одобрено':
-        return (
-          <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-xs font-medium">
-            <CheckCircleIcon className="w-3.5 h-3.5" />
-            <span>Выдано</span>
-          </div>
-        );
-      case 'pending': 
-      case 'на рассмотрении':
-      case 'created':
-        return (
-          <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-amber-50 text-amber-600 rounded-lg text-xs font-medium">
-            <ClockIcon className="w-3.5 h-3.5" />
-            <span>В обработке</span>
-          </div>
-        );
-      case 'rejected':
-      case 'отказано':
-        return (
-          <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-red-50 text-red-600 rounded-lg text-xs font-medium">
-            <XCircleIcon className="w-3.5 h-3.5" />
-            <span>Отклонено</span>
-          </div>
-        );
-      default:
-        return (
-          <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-slate-50 text-slate-600 rounded-lg text-xs font-medium">
-            <DocumentIcon className="w-3.5 h-3.5" />
-            <span>{status}</span>
-          </div>
-        );
+  // Reset all filters
+  const resetFilters = () => {
+    setSelectedPeriod('all');
+    setCustomDateRange({ start: '', end: '' });
+    setSearchQuery('');
+    setDebouncedSearchQuery('');
+  };
+
+  // Check if any filter is applied
+  const isFilterApplied = () => {
+    return selectedPeriod !== 'all' || debouncedSearchQuery !== '';
+  };
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  // Функция для получения детальной информации о заявке
+  const handleShowApplicationDetails = async (applicationId: string) => {
+    try {
+      setLoadingApplicationDetails(true);
+      // Ищем заявку в списке, чтобы получить originalId
+      const application = applications.find(app => app.id === applicationId);
+      if (!application) {
+        console.error('Application not found in list');
+        return;
+      }
+      
+      console.log('Using originalId for API request:', application.originalId);
+      const applicationDetails = await applicationService.getApplication(application.originalId);
+      setSelectedApplication(applicationDetails);
+      setIsApplicationModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching application details:', error);
+      // Можно показать уведомление об ошибке
+    } finally {
+      setLoadingApplicationDetails(false);
     }
   };
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* Test link to QR page - you can remove this in production */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-        <h3 className="text-sm font-medium text-blue-800 mb-2">Тестирование</h3>
-        <p className="text-sm text-blue-700 mb-3">
-          Проверьте новую страницу QR-кода для выбора банков вашими клиентами:
-        </p>
-        <Link 
-          href="/qr/techno-plus" 
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          Открыть QR-страницу
-        </Link>
-      </div>
-
       {/* Header section */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-800 mb-2">
@@ -391,7 +757,18 @@ export default function MerchantDashboard() {
       {/* Action row - Period filter and CTA Button */}
       <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5">
         {/* Period filter tabs - left side */}
+        <div className="flex items-center gap-4">
         <div className="inline-flex rounded-full border border-slate-200 p-1">
+            <button
+              onClick={() => setSelectedPeriod('all')}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                selectedPeriod === 'all' 
+                  ? 'bg-sky-50 text-sky-600' 
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              Все
+            </button>
           <button
             onClick={() => setSelectedPeriod('today')}
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
@@ -434,20 +811,32 @@ export default function MerchantDashboard() {
           </button>
           <button
             onClick={() => setIsDatePickerOpen(true)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
               selectedPeriod === 'custom' 
                 ? 'bg-sky-50 text-sky-600' 
                 : 'text-slate-600 hover:bg-slate-50'
             }`}
             title="Выбрать диапазон дат"
           >
-            <CalendarDaysIcon className="h-4 w-4" />
-            {selectedPeriod === 'custom' && (
-              <span className="hidden sm:inline">
-                {customDateRange.start.split('-').reverse().join('.')} - {customDateRange.end.split('-').reverse().join('.')}
+            Даты
+            {selectedPeriod === 'custom' && customDateRange.start && customDateRange.end && (
+              <span className="hidden sm:inline ml-1.5">
+                ({customDateRange.start.split('-').reverse().join('.')} - {customDateRange.end.split('-').reverse().join('.')})
               </span>
             )}
           </button>
+          </div>
+          
+          {/* Reset filters button - only shown when not on "All" */}
+          {selectedPeriod !== 'all' && (
+            <button 
+              onClick={resetFilters}
+              className="text-sm text-sky-600 hover:text-sky-800 flex items-center gap-1.5"
+            >
+              <XMarkIcon className="h-4 w-4" />
+              <span>Сбросить</span>
+            </button>
+          )}
         </div>
         
         {/* Action button - right side */}
@@ -468,7 +857,7 @@ export default function MerchantDashboard() {
           <StatCard 
             title="Выдано"
             value={`₸${formatAmount(metrics.totalAmount)}`}
-            icon={<CurrencyDollarIcon className="w-5 h-5" />}
+            icon={<BanknotesIcon className="w-5 h-5" />}
             highlight={true}
           />
           
@@ -503,17 +892,20 @@ export default function MerchantDashboard() {
               </div>
               <input 
                 type="text"
-                placeholder="Поиск..."
-                className="w-full sm:w-auto pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500"
+                placeholder="Поиск по имени клиента или ID заявки (#123)"
+                className="w-full sm:w-auto pl-9 pr-3 py-2 text-sm text-black border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500"
+                value={searchQuery}
+                onChange={handleSearchChange}
               />
+              {searchQuery && (
+                <button 
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-slate-400 hover:text-slate-500"
+                  onClick={() => setSearchQuery('')}
+                >
+                  <XMarkIcon className="h-4 w-4" />
+                </button>
+              )}
             </div>
-            
-            <button 
-              className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
-              onClick={handleRefresh}
-            >
-              <ArrowPathIcon className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
           </div>
         </div>
         
@@ -538,6 +930,22 @@ export default function MerchantDashboard() {
               <div className="mx-auto mb-6 p-4 rounded-full bg-slate-100 w-16 h-16 flex items-center justify-center">
                 <DocumentTextIcon className="w-8 h-8 text-slate-400" />
               </div>
+              {isFilterApplied() ? (
+                <>
+                  <h3 className="text-xl font-medium text-slate-800 mb-3">Нет заявок по выбранному фильтру</h3>
+                  <p className="text-slate-500 mb-8">
+                    Попробуйте изменить параметры фильтрации или сбросьте фильтры, чтобы увидеть все заявки
+                  </p>
+                  <button 
+                    onClick={resetFilters}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-sky-600 text-white rounded-lg text-sm font-medium hover:bg-sky-700 transition-colors mx-auto"
+                  >
+                    <XMarkIcon className="w-5 h-5" />
+                    <span>Сбросить фильтры</span>
+                  </button>
+                </>
+              ) : (
+                <>
               <h3 className="text-xl font-medium text-slate-800 mb-3">У вас еще нет заявок</h3>
               <p className="text-slate-500 mb-8">Создайте вашу первую заявку на рассрочку, чтобы начать работу с платформой</p>
               <button 
@@ -547,6 +955,8 @@ export default function MerchantDashboard() {
                 <PlusIcon className="w-5 h-5" />
                 <span>Подать заявку</span>
               </button>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -578,7 +988,11 @@ export default function MerchantDashboard() {
                       {getStatusDisplay(application.status)}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button className="text-slate-400 hover:text-sky-500 transition-colors">
+                    <button 
+                      onClick={() => handleShowApplicationDetails(application.id)}
+                      disabled={loadingApplicationDetails}
+                      className="text-slate-400 hover:text-sky-500 transition-colors disabled:opacity-50"
+                    >
                       <EllipsisHorizontalIcon className="w-5 h-5" />
                     </button>
                   </td>
@@ -650,6 +1064,18 @@ export default function MerchantDashboard() {
         isOpen={isDatePickerOpen}
         onClose={() => setIsDatePickerOpen(false)}
         onApply={handleApplyDateRange}
+        startDateValue={customDateRange.start}
+        endDateValue={customDateRange.end}
+      />
+
+      {/* Модальное окно с информацией о заявке */}
+      <ApplicationModal 
+        isOpen={isApplicationModalOpen}
+        onClose={() => {
+          setIsApplicationModalOpen(false);
+          setSelectedApplication(null);
+        }}
+        application={selectedApplication}
       />
     </div>
   );

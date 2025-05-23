@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   DocumentTextIcon,
   MagnifyingGlassIcon,
@@ -25,6 +25,9 @@ import {
   EllipsisHorizontalIcon,
   ArrowUpIcon
 } from '@heroicons/react/24/outline';
+import { ApplicationStatus } from '@/utils/statusMappings';
+import StatusBadge from '@/components/StatusBadge';
+import applicationService from '@/api/services/applicationService';
 
 // Modern color palette - matching merchant dashboard
 const colors = {
@@ -46,9 +49,6 @@ const colors = {
     tertiary: '#94A3B8' // slate-400
   }
 };
-
-// Application status types
-type ApplicationStatus = 'Одобрено' | 'Отказано' | 'На рассмотрении';
 
 // Application type
 type Application = {
@@ -109,100 +109,26 @@ const formatAmount = (amount: string) => {
 };
 
 export default function AdminApplications() {
-  // Mock applications data - use consistent formatting for amounts
-  const mockApplications: Application[] = [
-    { 
-      id: 'APP-1234', 
-      clientName: 'Айгуль Нурланова', 
-      amount: '45000', 
-      date: '2023-11-01', 
-      status: 'Одобрено',
-      phone: '+7 (701) 234-5678',
-      merchant: 'ИП "Электроника"',
-      merchantId: 'M-1001',
-    },
-    { 
-      id: 'APP-1235', 
-      clientName: 'Самат Исмаилов', 
-      amount: '78000', 
-      date: '2023-11-01', 
-      status: 'На рассмотрении',
-      phone: '+7 (702) 345-6789',
-      merchant: 'ТОО "МебельПлюс"',
-      merchantId: 'M-1002',
-    },
-    { 
-      id: 'APP-1236', 
-      clientName: 'Марат Алимов', 
-      amount: '23000', 
-      date: '2023-10-31', 
-      status: 'Отказано',
-      phone: '+7 (705) 456-7890',
-      merchant: 'ИП Сагитов',
-      merchantId: 'M-1003',
-    },
-    { 
-      id: 'APP-1237', 
-      clientName: 'Дина Сагитова', 
-      amount: '56000', 
-      date: '2023-10-30', 
-      status: 'Одобрено',
-      phone: '+7 (707) 567-8901',
-      merchant: 'ИП "Электроника"',
-      merchantId: 'M-1001',
-    },
-    { 
-      id: 'APP-1238', 
-      clientName: 'Амир Касимов', 
-      amount: '120000', 
-      date: '2023-10-29', 
-      status: 'Отказано',
-      phone: '+7 (700) 678-9012',
-      merchant: 'ИП "Модный Дом"',
-      merchantId: 'M-1005',
-    },
-    { 
-      id: 'APP-1239', 
-      clientName: 'Жанна Ибраева', 
-      amount: '67000', 
-      date: '2023-10-28', 
-      status: 'Одобрено',
-      phone: '+7 (777) 789-0123',
-      merchant: 'ТОО "МебельПлюс"',
-      merchantId: 'M-1002',
-    },
-    { 
-      id: 'APP-1240', 
-      clientName: 'Асхат Муратов', 
-      amount: '95000', 
-      date: '2023-10-28', 
-      status: 'На рассмотрении',
-      phone: '+7 (702) 890-1234',
-      merchant: 'ИП "Электроника"',
-      merchantId: 'M-1001',
-    },
-    { 
-      id: 'APP-1241', 
-      clientName: 'Карина Абдулова', 
-      amount: '42000', 
-      date: '2023-10-27', 
-      status: 'Одобрено',
-      phone: '+7 (705) 901-2345',
-      merchant: 'ИП "ТехноМир"',
-      merchantId: 'M-1006',
-    },
-  ];
-  
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    applicationService.getApplications().then((data) => {
+      setApplications(data.applications);
+      setLoading(false);
+    });
+  }, []);
+
   // Calculate summary statistics with memoization to prevent re-calculation
   const stats = useMemo(() => {
     return {
-      total: mockApplications.length,
-      approved: mockApplications.filter(app => app.status === 'Одобрено').length,
-      rejected: mockApplications.filter(app => app.status === 'Отказано').length,
-      pending: mockApplications.filter(app => app.status === 'На рассмотрении').length,
-      totalAmount: mockApplications.reduce((sum, app) => sum + parseInt(app.amount), 0),
+      total: applications.length,
+      approved: applications.filter(app => app.status === 'Одобрено').length,
+      rejected: applications.filter(app => app.status === 'Отказано').length,
+      pending: applications.filter(app => app.status === 'На рассмотрении').length,
+      totalAmount: applications.reduce((sum, app) => sum + parseInt(app.amount), 0),
     };
-  }, [mockApplications]);
+  }, [applications]);
   
   // Filter states
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | 'Все'>('Все');
@@ -216,17 +142,17 @@ export default function AdminApplications() {
   
   // Get unique merchants for filter dropdown
   const merchants = useMemo(() => {
-    return Array.from(new Set(mockApplications.map(app => app.merchant))).map(
+    return Array.from(new Set(applications.map(app => app.merchant))).map(
     merchantName => ({
       name: merchantName,
-      id: mockApplications.find(app => app.merchant === merchantName)?.merchantId || ''
+      id: applications.find(app => app.merchant === merchantName)?.merchantId || ''
     })
   );
-  }, [mockApplications]);
+  }, [applications]);
   
   // Filter applications based on criteria
   const filteredApplications = useMemo(() => {
-    return mockApplications.filter((app) => {
+    return applications.filter((app) => {
     // Status filter
     if (statusFilter !== 'Все' && app.status !== statusFilter) return false;
     
@@ -246,7 +172,7 @@ export default function AdminApplications() {
     
     return true;
   });
-  }, [mockApplications, statusFilter, merchantFilter, dateFilter, searchQuery]);
+  }, [applications, statusFilter, merchantFilter, dateFilter, searchQuery]);
   
   // Pagination
   const paginatedApplications = useMemo(() => {
@@ -288,34 +214,12 @@ export default function AdminApplications() {
   };
   
   // Render status badge with appropriate styles
-  const renderStatusBadge = (status: ApplicationStatus) => {
-    let icon;
-    
-    switch (status) {
-      case 'Одобрено':
-        icon = <CheckCircleIcon className="w-3.5 h-3.5" />;
-        return (
-          <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-600">
-            {icon}
-            <span>{status}</span>
-          </div>
-        );
-      case 'Отказано':
-        icon = <XCircleIcon className="w-3.5 h-3.5" />;
-        return (
-          <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium bg-red-50 text-red-600">
-            {icon}
-            <span>{status}</span>
-          </div>
-        );
-      case 'На рассмотрении':
-        icon = <ClockIcon className="w-3.5 h-3.5" />;
-    return (
-          <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium bg-amber-50 text-amber-600">
-            {icon}
-            <span>{status}</span>
-      </div>
-    );
+  const renderStatusBadge = (status: string) => {
+    // Если статус распознан, используем StatusBadge, иначе показываем текстом
+    try {
+      return <StatusBadge status={status as ApplicationStatus} size="sm" />;
+    } catch {
+      return <span className="inline-block px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">{status}</span>;
     }
   };
   
@@ -729,7 +633,7 @@ export default function AdminApplications() {
           <div className="p-5">
             <div className="h-[220px] overflow-y-auto pr-1 space-y-3">
               {merchants.map((merchant) => {
-                const merchantApps = mockApplications.filter(app => app.merchantId === merchant.id);
+                const merchantApps = applications.filter(app => app.merchantId === merchant.id);
                 const approvedCount = merchantApps.filter(app => app.status === 'Одобрено').length;
                 const percent = merchantApps.length ? Math.round((approvedCount / merchantApps.length) * 100) : 0;
                 

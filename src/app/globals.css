@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --primary: #3b82f6; /* Blue-500 */
+  --primary: #0073E6; /* Blue-500 */
   --primary-foreground: #ffffff;
   --background: #ffffff;
   --foreground: #171717;
@@ -15,9 +15,9 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --primary: #3b82f6;
+    --primary: #0073E6;
     --primary-foreground: #ffffff;
-    --background: #0f172a;
+    --background: #ffffff;
     --foreground: #f8fafc;
     --muted: #1e293b;
     --muted-foreground: #94a3b8;
@@ -25,6 +25,7 @@
   }
 }
 
+html,
 body {
   background: var(--background);
   color: var(--foreground);
@@ -33,7 +34,7 @@ body {
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors;
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[#0073E6] hover:bg-[#0069D9] rounded-md transition-colors;
   }
   
   .btn-secondary {
@@ -52,6 +53,51 @@ body {
 
 .animate-fadeIn {
   animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Modal animations */
+@keyframes modalFadeIn {
+  from { 
+    opacity: 0; 
+    transform: scale(0.95) translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1) translateY(0); 
+  }
+}
+
+@keyframes backdropFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-modal-in {
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+.animate-backdrop-in {
+  animation: backdropFadeIn 0.3s ease-out;
+}
+
+/* Smooth transitions for cards */
+.card-hover {
+  transition: all 0.2s ease-in-out;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+/* Button animations */
+.btn-gradient-hover {
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-gradient-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.5);
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */

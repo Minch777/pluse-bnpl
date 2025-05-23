@@ -24,6 +24,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { QRCodeSVG } from 'qrcode.react';
 import merchantService, { Merchant, Outlet, ApplicationLink } from '@/api/services/merchantService';
+import { getBankConnections, BankType } from '@/api/services/banksService';
 import QRBenefitsModal from '@/components/QRBenefitsModal';
 
 // Modern color palette
@@ -283,6 +284,49 @@ export default function MerchantLink() {
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [tokenState, setTokenState] = useState<string | null>(null);
   const [showQRBenefits, setShowQRBenefits] = useState(false);
+  const [connectedBanks, setConnectedBanks] = useState<Record<string, boolean>>({
+    rbk: true, // RBK is always connected by default
+    kaspi: false,
+    halyk: false
+  });
+  // Добавляем состояние для хранения порядка банков
+  const [bankOrder, setBankOrder] = useState<Record<string, number>>({});
+  // Добавляем состояние для отслеживания выбранного типа ссылки
+  const [linkType, setLinkType] = useState<'basic' | 'qr'>('basic');
+  
+  // Определяем все доступные ручные банки
+  const manualBanks = [
+    {
+      id: 'kaspi',
+      name: 'Kaspi Bank',
+      logo: '/kaspi-logo.png'
+    },
+    {
+      id: 'halyk',
+      name: 'Halyk Bank',
+      logo: '/halyk-logo.png'
+    },
+    {
+      id: 'home',
+      name: 'Home Credit Bank',
+      logo: '/home-logo.png'
+    },
+    {
+      id: 'forte',
+      name: 'ForteBank',
+      logo: '/forte-logo.png'
+    },
+    {
+      id: 'evra',
+      name: 'Evra Bank',
+      logo: '/evra-logo.png'
+    },
+    {
+      id: 'jusan',
+      name: 'Jusan Bank',
+      logo: '/jusan-logo.png'
+    }
+  ];
   
   const qrRef = useRef<SVGSVGElement>(null);
   
@@ -312,29 +356,11 @@ export default function MerchantLink() {
     };
   }, []);
   
-  // Check and set token if needed
+  // Получаем токен из localStorage без проверки на его наличие (это делается на уровне Layout)
   useEffect(() => {
-    // Проверяем и выводим информацию о токене
     const token = localStorage.getItem('token');
-    console.log('Current token in localStorage:', token ? 'Token exists' : 'No token');
     setTokenState(token);
-    
-    // Если токена нет, перенаправляем на страницу логина
-    if (!token) {
-      console.log('No token found, redirecting to login');
-      localStorage.setItem('redirectAfterLogin', window.location.pathname);
-      router.push('/login');
-    }
-    
-    // Только для тестирования - если нужен тестовый токен
-    if (process.env.NODE_ENV === 'development' && !token) {
-      // Если мы разрабатываем и токена нет, можно задать тестовый токен
-      const devToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyMzQ1Njc4OTAiLCJuYW1lIjoiVGVzdCBVc2VyIiwicm9sZSI6Im1lcmNoYW50In0.7bHQI2CmTCgQuV3PJeVgGlsafKH5hEtO-3o4NZP5bh0';
-      console.log('Setting development token for testing');
-      localStorage.setItem('token', devToken);
-      setTokenState(devToken);
-    }
-  }, [router]);
+  }, []);
   
   // Fetch merchant data on component mount
   useEffect(() => {
@@ -352,6 +378,12 @@ export default function MerchantLink() {
         console.log('Merchant data received in component:', merchantData);
         setMerchant(merchantData);
         
+        // Сохраняем slug в localStorage для использования в других компонентах
+        if (merchantData && merchantData.slug) {
+          localStorage.setItem('merchantSlug', merchantData.slug);
+          console.log('Merchant slug saved to localStorage:', merchantData.slug);
+        }
+        
         setError(null);
       } catch (err: any) {
         console.error('Error in component when fetching merchant data:', err);
@@ -364,11 +396,112 @@ export default function MerchantLink() {
     fetchMerchantData();
   }, [tokenState]);
   
+  // Fetch bank connections
+  useEffect(() => {
+    const fetchBankConnections = async () => {
+      if (!tokenState) return;
+      
+      try {
+        const connections = await getBankConnections();
+        
+        // Create a map of bank connections
+        const bankConnections: Record<string, boolean> = {
+          rbk: true // RBK is always connected by default
+        };
+        
+        // Создаем карту порядка подключений
+        const bankOrderMap: Record<string, number> = {};
+        
+        // Find connections for all manual banks
+        connections.forEach((connection, index) => {
+          if (connection.bankType === 'KASPI') {
+            bankConnections.kaspi = true;
+            bankOrderMap.kaspi = index;
+          } else if (connection.bankType === 'HALYK') {
+            bankConnections.halyk = true;
+            bankOrderMap.halyk = index;
+          } else if (connection.bankType === 'HOME') {
+            bankConnections.home = true;
+            bankOrderMap.home = index;
+          } else if (connection.bankType === 'FORTE') {
+            bankConnections.forte = true;
+            bankOrderMap.forte = index;
+          } else if (connection.bankType === 'EURASIAN') {
+            bankConnections.evra = true;
+            bankOrderMap.evra = index;
+          } else if (connection.bankType === 'JUSAN') {
+            bankConnections.jusan = true;
+            bankOrderMap.jusan = index;
+          }
+        });
+        
+        setConnectedBanks(bankConnections);
+        setBankOrder(bankOrderMap);
+      } catch (error) {
+        console.error('Error fetching bank connections:', error);
+        // Keep the default values in case of error
+      }
+    };
+    
+    fetchBankConnections();
+  }, [tokenState]);
+  
+  // После загрузки данных о банках устанавливаем начальный тип ссылки
+  useEffect(() => {
+    // Проверяем, есть ли подключенные ручные банки
+    const hasManualBanks = Object.entries(connectedBanks).some(([key, value]) => key !== 'rbk' && value);
+    
+    // Если есть подключенные ручные банки, выбираем "Единый QR", иначе "Основная ссылка"
+    if (hasManualBanks) {
+      setLinkType('qr');
+    } else {
+      setLinkType('basic');
+    }
+  }, [connectedBanks]);
+  
+  // Функция для сортировки и отбора банков для отображения, аналогично странице Terms
+  const getVisibleBanks = () => {
+    // Разделяем банки на подключенные и неподключенные
+    const connected = manualBanks.filter(bank => connectedBanks[bank.id]);
+    const unconnected = manualBanks.filter(bank => !connectedBanks[bank.id]);
+    
+    // Сортируем подключенные банки по порядку подключения
+    const sortedConnected = [...connected].sort((a, b) => {
+      const orderA = bankOrder[a.id] || 0;
+      const orderB = bankOrder[b.id] || 0;
+      return orderA - orderB;
+    });
+    
+    // Определяем, сколько неподключенных банков нужно показать
+    // Если подключенных меньше 2, показываем неподключенные, чтобы в сумме было 2
+    const showUnconnectedCount = Math.max(0, 2 - sortedConnected.length);
+    
+    // Возвращаем подключенные банки + нужное количество неподключенных (максимум 2 банка)
+    const result = [...sortedConnected, ...unconnected.slice(0, showUnconnectedCount)];
+    return result.slice(0, 2);
+  };
+
+  // Получаем банки для отображения
+  const visibleBanks = getVisibleBanks();
+  
   // Gets the current application URL or generates a new one if needed
   const getCurrentLink = async () => {
     if (!merchant) return '';
     
     try {
+      // If manual banks are connected, use the QR link
+      if (linkType === 'qr') {
+        // Используем slug мерчанта для формирования URL
+        if (merchant.slug) {
+          console.log('Using merchant slug for QR link:', merchant.slug);
+          return `${process.env.NEXT_PUBLIC_FRONTEND_URL}/qr/${merchant.slug}`;
+        } else {
+          console.log('No merchant slug found, using direct QR link');
+          return `${process.env.NEXT_PUBLIC_FRONTEND_URL}/qr`;
+        }
+      }
+      
+      // Для основной ссылки
       const result = await merchantService.createApplicationLink(merchant.slug, 0);
       setGeneratedLink(result.redirectUrl);
       return result.redirectUrl;
@@ -486,7 +619,13 @@ export default function MerchantLink() {
                 <div className="relative bg-white p-5 rounded-xl shadow-sm border border-gray-200">
                   <QRCodeSVG
                     ref={qrRef}
-                    value={generatedLink || `${process.env.NEXT_PUBLIC_FRONTEND_URL}/public/${merchant?.slug || ''}`}
+                    value={
+                      linkType === 'qr'
+                        ? (merchant?.slug 
+                            ? `${process.env.NEXT_PUBLIC_FRONTEND_URL}/qr/${merchant.slug}` 
+                            : `${process.env.NEXT_PUBLIC_FRONTEND_URL}/qr`)
+                        : (generatedLink || `${process.env.NEXT_PUBLIC_FRONTEND_URL}/public/${merchant?.slug || ''}`)
+                    }
                     size={180}
                     bgColor="#FFFFFF"
                     fgColor={colors.primary}
@@ -505,7 +644,13 @@ export default function MerchantLink() {
                   <span>Скачать QR</span>
                 </button>
                 <ShareMenu 
-                  applicationLink={generatedLink || `${process.env.NEXT_PUBLIC_FRONTEND_URL}/public/${merchant?.slug || ''}`}
+                  applicationLink={
+                    linkType === 'qr'
+                      ? (merchant?.slug 
+                          ? `${process.env.NEXT_PUBLIC_FRONTEND_URL}/qr/${merchant.slug}` 
+                          : `${process.env.NEXT_PUBLIC_FRONTEND_URL}/qr`)
+                      : (generatedLink || `${process.env.NEXT_PUBLIC_FRONTEND_URL}/public/${merchant?.slug || ''}`)
+                  }
                   onCopyLink={handleCopyLink}
                   copied={copied}
                 />
@@ -522,12 +667,55 @@ export default function MerchantLink() {
               </div>
             
               <div className="space-y-3">
+                {/* Добавляем выбор типа ссылки */}
+                <div className="flex space-x-2 mb-4">
+                  {/* Поменяли порядок кнопок - сначала Единый QR */}
+                  {/* Отображаем Единый QR только при наличии подключенных ручных банков */}
+                  {Object.entries(connectedBanks).some(([key, value]) => key !== 'rbk' && value) && (
+                    <button
+                      onClick={() => {
+                        setLinkType('qr');
+                      }}
+                      className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        linkType === 'qr'
+                          ? 'bg-sky-50 text-sky-700 border border-sky-200'
+                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-sky-50 hover:text-sky-600'
+                      }`}
+                    >
+                      <QrCodeIcon className="h-5 w-5 mr-2" />
+                      Единый QR
+                    </button>
+                  )}
+                  
+                  {/* Основная ссылка отображается всегда */}
+                  <button
+                    onClick={() => {
+                      setLinkType('basic');
+                    }}
+                    className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      linkType === 'basic'
+                        ? 'bg-sky-50 text-sky-700 border border-sky-200'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-sky-50 hover:text-sky-600'
+                    }`}
+                  >
+                    <LinkIcon className="h-5 w-5 mr-2" />
+                    Основная ссылка
+                  </button>
+                </div>
+                
+                {/* Показываем поле с соответствующей выбранной ссылкой */}
                 <div className="flex gap-3">
                   <div className="flex-1 relative">
                     <input
                       type="text"
                       readOnly
-                      value={generatedLink || `${process.env.NEXT_PUBLIC_FRONTEND_URL}/public/${merchant?.slug || ''}`}
+                      value={
+                        linkType === 'qr'
+                          ? (merchant?.slug 
+                              ? `${process.env.NEXT_PUBLIC_FRONTEND_URL}/qr/${merchant.slug}` 
+                              : `${process.env.NEXT_PUBLIC_FRONTEND_URL}/qr`)
+                          : (generatedLink || `${process.env.NEXT_PUBLIC_FRONTEND_URL}/public/${merchant?.slug || ''}`)
+                      }
                       className="w-full pr-10 py-3 px-4 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
                     />
                   </div>
@@ -571,41 +759,35 @@ export default function MerchantLink() {
                       <img src="/rbk-logo.png" alt="RBK Bank" className="w-full h-auto object-contain" />
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm font-medium text-emerald-600 bg-emerald-50 px-4 py-1.5 rounded-full shadow-sm border border-emerald-100">
-                    <CheckIcon className="h-4 w-4" />
+                  <div className="flex items-center gap-2 text-sm font-medium text-sky-700 bg-sky-50 px-4 py-1.5 rounded-full shadow-sm border border-sky-100">
                     <span>Подключено</span>
                   </div>
                 </div>
-                {/* Kaspi Bank - Not Connected */}
-                <div className="p-5 flex items-center justify-between hover:bg-slate-50/70 transition-all duration-200 rounded-lg mx-2 my-1">
+                
+                {/* Отображаем только отсортированные банки (максимум 2) */}
+                {visibleBanks.map(bank => (
+                  <div key={bank.id} className="p-5 flex items-center justify-between hover:bg-slate-50/70 transition-all duration-200 rounded-lg mx-2 my-1">
                   <div className="flex items-center gap-3">
                     <div className="w-28 h-10 flex items-center">
-                      <img src="/kaspi-logo.png" alt="Kaspi Bank" className="w-full h-auto object-contain" />
+                        <img src={bank.logo} alt={bank.name} className="w-full h-auto object-contain" />
+                      </div>
                     </div>
+                    {connectedBanks[bank.id] ? (
+                      <div className="flex items-center gap-2 text-sm font-medium text-sky-700 bg-sky-50 px-4 py-1.5 rounded-full shadow-sm border border-sky-100">
+                        <span>Подключено</span>
                   </div>
+                    ) : (
                   <button 
-                    onClick={() => router.push('/merchant/terms?show_connect_bank=kaspi')}
+                        onClick={() => router.push(`/merchant/terms?bank=${bank.id}`)}
                     className="text-sm font-medium text-sky-600 hover:text-sky-700 flex items-center gap-1 bg-sky-50 px-3 py-1 rounded-full hover:bg-sky-100 transition-colors"
                   >
                     <PlusIcon className="h-4 w-4" />
                     <span>Подключить</span>
                   </button>
-                </div>
-                {/* Halyk Bank - Not Connected */}
-                <div className="p-5 flex items-center justify-between hover:bg-slate-50/70 transition-all duration-200 rounded-lg mx-2 my-1">
-                  <div className="flex items-center gap-3">
-                    <div className="w-28 h-10 flex items-center">
-                      <img src="/halyk-logo.png" alt="Halyk Bank" className="w-full h-auto object-contain" />
-                    </div>
+                    )}
                   </div>
-                  <button 
-                    onClick={() => router.push('/merchant/terms?show_connect_bank=halyk')}
-                    className="text-sm font-medium text-sky-600 hover:text-sky-700 flex items-center gap-1 bg-sky-50 px-3 py-1 rounded-full hover:bg-sky-100 transition-colors"
-                  >
-                    <PlusIcon className="h-4 w-4" />
-                    <span>Подключить</span>
-                  </button>
-                </div>
+                ))}
+                
                 {/* Add More Banks */}
                 <div className="p-5 flex items-center justify-between hover:bg-slate-50/70 transition-all duration-200 rounded-lg mx-2 my-1">
                   <button 
@@ -615,7 +797,7 @@ export default function MerchantLink() {
                     <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 group-hover:bg-gray-200 transition-colors shadow-sm">
                       <PlusIcon className="h-5 w-5 text-gray-500 group-hover:text-gray-700" />
                     </div>
-                    <span className="text-sm font-medium">Другие банки</span>
+                    <span className="text-sm font-medium">Все банки</span>
                   </button>
                 </div>
               </div>

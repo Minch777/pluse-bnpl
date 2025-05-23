@@ -7,9 +7,9 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: '#8335ff',
-        'primary-hover': '#7128f3',
-        'primary-light': '#f6efff',
+        primary: '#0073E6',
+        'primary-hover': '#0069D9',
+        'primary-light': '#E6F1FC',
       },
       transitionProperty: {
         'backdrop-filter': 'backdrop-filter',

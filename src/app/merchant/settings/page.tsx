@@ -18,15 +18,43 @@ import {
   ArrowPathIcon,
   CreditCardIcon,
   Square3Stack3DIcon,
-  ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  XMarkIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  IdentificationIcon,
+  BuildingLibraryIcon
 } from '@heroicons/react/24/outline';
 import { SparklesIcon } from '@heroicons/react/24/solid';
+import Modal from '@/components/Modal';
 
 export default function MerchantSettings() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('profile');
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [formData, setFormData] = useState({
+    brand: 'Pluse',
+    companyName: 'ИП Предприниматель',
+    bin: '123456789012',
+    ceoName: 'Иванов Иван Иванович',
+    website: 'https://example.com',
+    email: 'merchant@example.com',
+    phone: '+7 (777) 123-45-67',
+    address: 'ул. Абая 150, Алматы',
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+    // Bank requisites
+    bik: '',
+    checkingAccount: '',
+    kbe: ''
+  });
 
   const handleSave = async () => {
     setSaving(true);
@@ -45,8 +73,27 @@ export default function MerchantSettings() {
   };
 
   const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const confirmLogout = () => {
     localStorage.removeItem('token');
     router.push('/login');
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handlePasswordChange = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Here will be the logic to change password
+    console.log('Changing password');
+    setShowPasswordModal(false);
   };
 
   return (
@@ -55,11 +102,11 @@ export default function MerchantSettings() {
       <header className="pb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Настройки аккаунта</h1>
         <p className="text-lg text-gray-600">
-          Управление профилем, безопасностью и предпочтениями вашего аккаунта
+          Управление профилем и настройками вашего аккаунта
         </p>
       </header>
 
-      {/* Tabs navigation - styled like terms page */}
+      {/* Tabs navigation */}
       <div className="flex mb-8 bg-slate-50 rounded-lg p-1 max-w-fit">
         <button
           onClick={() => setActiveTab('profile')}
@@ -72,9 +119,9 @@ export default function MerchantSettings() {
           Профиль компании
         </button>
         <button
-          onClick={() => setActiveTab('password')}
+          onClick={() => setActiveTab('security')}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-            activeTab === 'password' 
+            activeTab === 'security' 
               ? 'bg-white text-slate-900 shadow-sm' 
               : 'text-slate-600 hover:bg-slate-100'
           }`}
@@ -82,24 +129,14 @@ export default function MerchantSettings() {
           Безопасность
         </button>
         <button
-          onClick={() => setActiveTab('notifications')}
+          onClick={() => setActiveTab('requisites')}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-            activeTab === 'notifications' 
+            activeTab === 'requisites' 
               ? 'bg-white text-slate-900 shadow-sm' 
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          Уведомления
-        </button>
-        <button
-          onClick={() => setActiveTab('payments')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-            activeTab === 'payments' 
-              ? 'bg-white text-slate-900 shadow-sm' 
-              : 'text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          Способы оплаты
+          Реквизиты
         </button>
         <button
           onClick={() => setActiveTab('integrations')}
@@ -131,28 +168,54 @@ export default function MerchantSettings() {
               <FormGroup
                 icon={<SparklesIcon className="w-4 h-4 text-sky-600" />}
                 label="Бренд"
-                defaultValue="Pluse"
+                value={formData.brand}
+                onChange={handleInputChange}
+                name="brand"
                 placeholder="Название вашего бренда"
               />
               
               <FormGroup
                 icon={<BuildingOfficeIcon className="w-4 h-4 text-sky-600" />}
                 label="Название компании"
-                defaultValue="ИП Предприниматель"
+                value={formData.companyName}
+                onChange={handleInputChange}
+                name="companyName"
                 placeholder="Юридическое название"
+              />
+
+              <FormGroup
+                icon={<BuildingLibraryIcon className="w-4 h-4 text-sky-600" />}
+                label="БИН"
+                value={formData.bin}
+                onChange={handleInputChange}
+                name="bin"
+                placeholder="12 цифр"
+              />
+
+              <FormGroup
+                icon={<IdentificationIcon className="w-4 h-4 text-sky-600" />}
+                label="ФИО руководителя"
+                value={formData.ceoName}
+                onChange={handleInputChange}
+                name="ceoName"
+                placeholder="ФИО руководителя компании"
               />
               
               <FormGroup
                 icon={<GlobeAltIcon className="w-4 h-4 text-sky-600" />}
                 label="Сайт"
-                defaultValue="https://example.com"
+                value={formData.website}
+                onChange={handleInputChange}
+                name="website"
                 placeholder="URL вашего сайта"
               />
               
               <FormGroup
                 icon={<EnvelopeIcon className="w-4 h-4 text-sky-600" />}
                 label="Email"
-                defaultValue="merchant@example.com"
+                value={formData.email}
+                onChange={handleInputChange}
+                name="email"
                 placeholder="Ваш контактный email"
                 type="email"
               />
@@ -160,7 +223,9 @@ export default function MerchantSettings() {
               <FormGroup
                 icon={<PhoneIcon className="w-4 h-4 text-sky-600" />}
                 label="Телефон"
-                defaultValue="+7 (777) 123-45-67"
+                value={formData.phone}
+                onChange={handleInputChange}
+                name="phone"
                 placeholder="Контактный телефон"
                 type="tel"
               />
@@ -168,17 +233,14 @@ export default function MerchantSettings() {
               <FormGroup
                 icon={<MapPinIcon className="w-4 h-4 text-sky-600" />}
                 label="Адрес"
-                defaultValue="ул. Абая 150, Алматы"
+                value={formData.address}
+                onChange={handleInputChange}
+                name="address"
                 placeholder="Юридический адрес"
-                textarea
-                rows={3}
               />
             </div>
 
-            <div className="pt-6 border-t border-gray-100 flex items-center justify-between">
-              <div className="text-sm text-gray-500">
-                Последнее обновление: 15 марта 2024
-              </div>
+            <div className="pt-6 border-t border-gray-100 flex items-center justify-end">
               <SaveButton 
                 onClick={handleSave} 
                 saving={saving} 
@@ -188,7 +250,7 @@ export default function MerchantSettings() {
           </div>
         )}
 
-        {activeTab === 'password' && (
+        {activeTab === 'security' && (
           <div className="p-6 space-y-8">
             <div className="flex items-center gap-4 pb-6 border-b border-gray-100">
               <div className="w-12 h-12 rounded-full bg-sky-50 flex items-center justify-center">
@@ -204,7 +266,9 @@ export default function MerchantSettings() {
               <FormGroup
                 icon={<KeyIcon className="w-4 h-4 text-sky-600" />}
                 label="Текущий пароль"
-                defaultValue=""
+                value={formData.currentPassword}
+                onChange={handleInputChange}
+                name="currentPassword"
                 placeholder="Введите текущий пароль"
                 type="password"
               />
@@ -212,7 +276,9 @@ export default function MerchantSettings() {
               <FormGroup
                 icon={<KeyIcon className="w-4 h-4 text-sky-600" />}
                 label="Новый пароль"
-                defaultValue=""
+                value={formData.newPassword}
+                onChange={handleInputChange}
+                name="newPassword"
                 placeholder="Введите новый пароль"
                 type="password"
               />
@@ -220,7 +286,9 @@ export default function MerchantSettings() {
               <FormGroup
                 icon={<KeyIcon className="w-4 h-4 text-sky-600" />}
                 label="Подтвердите новый пароль"
-                defaultValue=""
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                name="confirmPassword"
                 placeholder="Введите новый пароль снова"
                 type="password"
               />
@@ -242,7 +310,7 @@ export default function MerchantSettings() {
 
             <div className="pt-6 border-t border-gray-100 flex justify-end">
               <button
-                onClick={handleSave}
+                onClick={() => setShowPasswordModal(true)}
                 className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium 
                   ${saving || success 
                     ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
@@ -258,57 +326,62 @@ export default function MerchantSettings() {
           </div>
         )}
 
-        {activeTab === 'notifications' && (
+        {activeTab === 'requisites' && (
           <div className="p-6 space-y-8">
             <div className="flex items-center gap-4 pb-6 border-b border-gray-100">
               <div className="w-12 h-12 rounded-full bg-sky-50 flex items-center justify-center">
-                <BellIcon className="w-6 h-6 text-sky-600" />
+                <CreditCardIcon className="w-6 h-6 text-sky-600" />
               </div>
               <div>
-                <h2 className="text-xl font-medium text-slate-800">Настройки уведомлений</h2>
-                <p className="text-sm text-slate-500">Выберите, какие уведомления вы хотите получать</p>
+                <h2 className="text-xl font-medium text-slate-800">Реквизиты</h2>
+                <p className="text-sm text-slate-500">Управление банковскими реквизитами</p>
               </div>
             </div>
 
-            <div className="space-y-6">
-              <NotificationSetting
-                icon={<EnvelopeIcon className="w-5 h-5 text-sky-600" />}
-                title="Email-уведомления"
-                description="Получать уведомления о новых заявках и их статусах по email"
-                defaultChecked={true}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <FormGroup
+                icon={<CreditCardIcon className="w-4 h-4 text-sky-600" />}
+                label="БИК"
+                value={formData.bik || ''}
+                onChange={handleInputChange}
+                name="bik"
+                placeholder="БИК банка"
               />
-              
-              <NotificationSetting
-                icon={<DevicePhoneMobileIcon className="w-5 h-5 text-sky-600" />}
-                title="SMS-уведомления"
-                description="Получать важные уведомления по SMS"
-                defaultChecked={false}
-              />
-              
-              <NotificationSetting
-                icon={<NewspaperIcon className="w-5 h-5 text-sky-600" />}
-                title="Маркетинговые рассылки"
-                description="Получать новости о продуктах и акциях"
-                defaultChecked={true}
-              />
-              
-              <div className="bg-gray-50 rounded-lg p-5 text-sm text-gray-600 mt-4">
-                <p className="mb-4 font-medium text-gray-700">Как часто вы хотите получать дайджест?</p>
-                <div className="flex flex-wrap gap-3">
-                  <label className="flex items-center gap-2">
-                    <input type="radio" name="digest" value="daily" className="h-4 w-4 text-sky-600" />
-                    <span>Ежедневно</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="radio" name="digest" value="weekly" className="h-4 w-4 text-sky-600" defaultChecked />
-                    <span>Еженедельно</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="radio" name="digest" value="monthly" className="h-4 w-4 text-sky-600" />
-                    <span>Ежемесячно</span>
-                  </label>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Банк
+                </label>
+                <div className="relative rounded-lg">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <BuildingLibraryIcon className="w-4 h-4 text-sky-600" />
+                  </div>
+                  <input
+                    type="text"
+                    value="АО «RBK Bank»"
+                    readOnly
+                    className="block w-full pl-10 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 text-sm"
+                  />
                 </div>
               </div>
+
+              <FormGroup
+                icon={<BuildingLibraryIcon className="w-4 h-4 text-sky-600" />}
+                label="ИИК"
+                value={formData.checkingAccount || ''}
+                onChange={handleInputChange}
+                name="checkingAccount"
+                placeholder="20-значный номер счета"
+              />
+
+              <FormGroup
+                icon={<BuildingLibraryIcon className="w-4 h-4 text-sky-600" />}
+                label="КБЕ"
+                value={formData.kbe || ''}
+                onChange={handleInputChange}
+                name="kbe"
+                placeholder="Код бенефициара"
+              />
             </div>
 
             <div className="pt-6 border-t border-gray-100 flex justify-end">
@@ -316,77 +389,193 @@ export default function MerchantSettings() {
                 onClick={handleSave} 
                 saving={saving} 
                 success={success} 
-                text="Сохранить настройки"
               />
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'payments' && (
-          <div className="p-6 space-y-8">
-            <div className="flex items-center gap-4 pb-6 border-b border-gray-100">
-              <div className="w-12 h-12 rounded-full bg-sky-50 flex items-center justify-center">
-                <CreditCardIcon className="w-6 h-6 text-sky-600" />
-              </div>
-              <div>
-                <h2 className="text-xl font-medium text-slate-800">Способы оплаты</h2>
-                <p className="text-sm text-slate-500">Управление платежными реквизитами</p>
-              </div>
-            </div>
-
-            <div className="p-12 text-center">
-              <p className="text-gray-500 mb-4">Этот раздел находится в разработке</p>
-              <button className="px-5 py-2.5 bg-sky-50 text-sky-600 rounded-lg font-medium">
-                Подключить позже
-              </button>
             </div>
           </div>
         )}
         
         {activeTab === 'integrations' && (
-          <div className="p-6 space-y-8">
+          <div className="p-6">
             <div className="flex items-center gap-4 pb-6 border-b border-gray-100">
               <div className="w-12 h-12 rounded-full bg-sky-50 flex items-center justify-center">
                 <Square3Stack3DIcon className="w-6 h-6 text-sky-600" />
               </div>
               <div>
                 <h2 className="text-xl font-medium text-slate-800">Интеграции</h2>
-                <p className="text-sm text-slate-500">Настройка API и внешних сервисов</p>
+                <p className="text-sm text-slate-500">Подключение внешних сервисов и API</p>
               </div>
             </div>
 
-            <div className="p-12 text-center">
-              <p className="text-gray-500 mb-4">Этот раздел находится в разработке</p>
-              <button className="px-5 py-2.5 bg-sky-50 text-sky-600 rounded-lg font-medium">
-                Подключить API
-              </button>
+            <div className="mt-12 max-w-xl mx-auto text-center">
+              <h3 className="text-lg font-medium text-gray-900 mb-3">
+                Интеграция с вашим сервисом
+              </h3>
+              <p className="text-gray-600 mb-8">
+                Подключите BNPL к вашему сайту или вашему сервису через API для автоматизации рассрочки
+              </p>
+
+              <a
+                href="https://wa.me/77474288095?text=Добрый%20день!%20Меня%20интересует%20интеграция%20вашего%20сервиса%20–%20расскажите%20подробнее."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-sky-600 bg-sky-50 rounded-lg hover:bg-sky-100 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                </svg>
+                <span>Написать в WhatsApp</span>
+              </a>
             </div>
           </div>
         )}
       </div>
 
-      {/* Logout Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      {/* Password Change Modal */}
+      <Modal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)}>
         <div className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
-                <ArrowRightOnRectangleIcon className="w-6 h-6 text-red-600" />
-              </div>
-              <div>
-                <h2 className="text-xl font-medium text-slate-800">Выйти из аккаунта</h2>
-                <p className="text-sm text-slate-500">Завершить текущую сессию</p>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-semibold text-gray-900">Изменение пароля</h3>
+            <button
+              onClick={() => setShowPasswordModal(false)}
+              className="text-gray-400 hover:text-gray-500 transition-colors"
+            >
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+          </div>
+
+          <form onSubmit={handlePasswordChange} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Текущий пароль
+              </label>
+              <div className="relative">
+                <input
+                  type={showCurrentPassword ? "text" : "password"}
+                  name="currentPassword"
+                  value={formData.currentPassword}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showCurrentPassword ? (
+                    <EyeSlashIcon className="w-5 h-5" />
+                  ) : (
+                    <EyeIcon className="w-5 h-5" />
+                  )}
+                </button>
               </div>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Новый пароль
+              </label>
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  name="newPassword"
+                  value={formData.newPassword}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showNewPassword ? (
+                    <EyeSlashIcon className="w-5 h-5" />
+                  ) : (
+                    <EyeIcon className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Подтвердите новый пароль
+              </label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showConfirmPassword ? (
+                    <EyeSlashIcon className="w-5 h-5" />
+                  ) : (
+                    <EyeIcon className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setShowPasswordModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-sky-600 text-white rounded-lg text-sm font-medium hover:bg-sky-700 transition-colors"
+              >
+                Сохранить
+              </button>
+            </div>
+          </form>
+        </div>
+      </Modal>
+
+      {/* Logout Confirmation Modal */}
+      <Modal isOpen={showLogoutConfirm} onClose={() => setShowLogoutConfirm(false)}>
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-semibold text-gray-900">Подтверждение выхода</h3>
             <button
-              onClick={handleLogout}
-              className="px-5 py-2.5 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors"
+              onClick={() => setShowLogoutConfirm(false)}
+              className="text-gray-400 hover:text-gray-500 transition-colors"
+            >
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="mb-6">
+            <p className="text-gray-600">
+              Вы действительно хотите выйти из системы? Все несохраненные данные будут потеряны.
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setShowLogoutConfirm(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Отмена
+            </button>
+            <button
+              onClick={confirmLogout}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
             >
               Выйти
             </button>
           </div>
         </div>
-      </div>
+      </Modal>
     </div>
   );
 }
@@ -395,7 +584,9 @@ export default function MerchantSettings() {
 interface FormGroupProps {
   icon: React.ReactNode;
   label: string;
-  defaultValue?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  name: string;
   placeholder: string;
   textarea?: boolean;
   type?: string;
@@ -405,7 +596,9 @@ interface FormGroupProps {
 function FormGroup({ 
   icon, 
   label, 
-  defaultValue = "", 
+  value, 
+  onChange,
+  name,
   placeholder, 
   textarea = false, 
   type = "text", 
@@ -422,7 +615,9 @@ function FormGroup({
         </div>
         {textarea ? (
           <textarea
-            defaultValue={defaultValue}
+            name={name}
+            value={value}
+            onChange={onChange}
             placeholder={placeholder}
             rows={rows}
             className="block w-full pl-10 pr-3 py-2 bg-white border border-gray-300 rounded-lg shadow-sm focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-sm text-gray-700"
@@ -430,52 +625,14 @@ function FormGroup({
         ) : (
           <input
             type={type}
-            defaultValue={defaultValue}
+            name={name}
+            value={value}
+            onChange={onChange}
             placeholder={placeholder}
             className="block w-full pl-10 pr-3 py-2 bg-white border border-gray-300 rounded-lg shadow-sm focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-sm text-gray-700"
           />
         )}
       </div>
-    </div>
-  );
-}
-
-// Notification setting with toggle
-interface NotificationSettingProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  defaultChecked: boolean;
-}
-
-function NotificationSetting({ icon, title, description, defaultChecked }: NotificationSettingProps) {
-  return (
-    <div className="flex items-center justify-between py-4 border-b border-gray-100 gap-4">
-      <div className="flex items-start gap-3">
-        <div className="p-2 bg-sky-50 rounded-lg flex-shrink-0 mt-0.5">
-          {icon}
-        </div>
-        <div>
-          <h4 className="text-sm font-medium text-gray-900">{title}</h4>
-          <p className="mt-1 text-sm text-gray-500">
-            {description}
-          </p>
-        </div>
-      </div>
-      <label className="relative inline-flex items-center cursor-pointer">
-        <input
-          type="checkbox"
-          defaultChecked={defaultChecked}
-          className="sr-only peer"
-        />
-        <div
-          className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-sky-400/30 
-            peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] 
-            after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 
-            after:border after:rounded-full after:h-5 after:w-5 after:transition-all 
-            peer-checked:bg-sky-600"
-        ></div>
-      </label>
     </div>
   );
 }

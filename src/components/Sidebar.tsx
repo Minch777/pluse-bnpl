@@ -19,7 +19,9 @@ import {
   XMarkIcon,
   QuestionMarkCircleIcon,
   ChatBubbleLeftRightIcon,
-  BanknotesIcon
+  ChatBubbleLeftIcon,
+  BanknotesIcon,
+  ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline';
 import { SidebarContext } from '@/app/merchant/layout';
 
@@ -78,6 +80,15 @@ export default function Sidebar({ userRole = 'MERCHANT' }: SidebarProps) {
       router.push('/merchant/link?show_qr_benefits=true');
     }
     
+    if (isMobile) {
+      toggleMobileSidebar();
+    }
+  };
+
+  const handleLogout = () => {
+    // Add logout logic here
+    localStorage.removeItem('token');
+    router.push('/login');
     if (isMobile) {
       toggleMobileSidebar();
     }
@@ -170,13 +181,22 @@ export default function Sidebar({ userRole = 'MERCHANT' }: SidebarProps) {
                 Центр помощи
               </Link>
               <Link 
-                href="https://wa.me/77778889900" 
+                href="https://wa.me/77474288095" 
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 hover:bg-white hover:shadow-sm transition-colors"
                 onClick={toggleMobileSidebar}
               >
                 <ChatBubbleLeftRightIcon className="mr-3 h-4 w-4 text-gray-500" />
                 Написать в WhatsApp
               </Link>
+              <button 
+                onClick={handleLogout}
+                className="flex w-full items-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 hover:bg-white hover:shadow-sm transition-colors"
+              >
+                <ArrowRightOnRectangleIcon className="mr-3 h-4 w-4 text-gray-500" />
+                Выйти
+              </button>
             </div>
           </div>
         </div>
@@ -280,7 +300,9 @@ export default function Sidebar({ userRole = 'MERCHANT' }: SidebarProps) {
                 {!isCollapsed && 'Центр помощи'}
               </Link>
               <Link 
-                href="https://wa.me/77778889900" 
+                href="https://wa.me/77474288095" 
+                target="_blank"
+                rel="noopener noreferrer"
                 className={`group flex items-center ${isCollapsed ? 'justify-center' : 'px-4'} py-2.5 text-sm font-medium rounded-lg text-gray-700 hover:bg-white hover:shadow-sm transition-colors`}
                 title={isCollapsed ? 'Написать в WhatsApp' : ''}
               >
@@ -289,6 +311,16 @@ export default function Sidebar({ userRole = 'MERCHANT' }: SidebarProps) {
                 />
                 {!isCollapsed && 'Написать в WhatsApp'}
               </Link>
+              <button 
+                onClick={handleLogout}
+                className={`group flex items-center w-full ${isCollapsed ? 'justify-center' : 'px-4'} py-2.5 text-sm font-medium rounded-lg text-gray-700 hover:bg-white hover:shadow-sm transition-colors`}
+                title={isCollapsed ? 'Выйти' : ''}
+              >
+                <ArrowRightOnRectangleIcon 
+                  className={`${isCollapsed ? '' : 'mr-3'} h-4 w-4 text-gray-500`}
+                />
+                {!isCollapsed && 'Выйти'}
+              </button>
             </nav>
           </div>
 

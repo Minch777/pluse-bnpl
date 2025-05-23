@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { 
   ChevronDownIcon,
@@ -11,8 +11,10 @@ import {
   FunnelIcon
 } from '@heroicons/react/24/outline';
 import { SidebarContext } from '@/app/merchant/layout';
+import { ApplicationStatus } from '@/utils/statusMappings';
+import StatusBadge from '@/components/StatusBadge';
+import applicationService from '@/api/services/applicationService';
 
-type ApplicationStatus = 'pending' | 'approved' | 'rejected';
 type Period = 'today' | 'week' | 'month' | 'all';
 
 type Application = {
@@ -66,11 +68,20 @@ export default function MerchantApplications() {
   const [isPeriodDropdownOpen, setIsPeriodDropdownOpen] = useState(false);
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
   const { isMobile } = useContext(SidebarContext);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
   
+  useEffect(() => {
+    applicationService.getApplications().then((data) => {
+      setApplications(data.applications);
+      setLoading(false);
+    });
+  }, []);
+
   // Filter applications based on selected store
   const filteredApplications = selectedStore === 'all'
-    ? mockApplications
-    : mockApplications.filter(app => app.storeId === selectedStore);
+    ? applications
+    : applications.filter(app => app.storeId === selectedStore);
 
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('ru-RU').format(amount) + ' ₸';
@@ -92,14 +103,11 @@ export default function MerchantApplications() {
     }
   };
 
-  const getStatusText = (status: ApplicationStatus) => {
-    switch (status) {
-      case 'approved':
-        return 'Одобрено';
-      case 'rejected':
-        return 'Отказано';
-      default:
-        return 'На рассмотрении';
+  const getStatusText = (status: string) => {
+    try {
+      return <StatusBadge status={status as ApplicationStatus} size="sm" />;
+    } catch {
+      return <span className="inline-block px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">{status}</span>;
     }
   };
 
