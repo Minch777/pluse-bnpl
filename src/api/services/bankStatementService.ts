@@ -4,6 +4,12 @@ import axiosClient from '../axiosClient';
 export interface BankStatementCheckResponse {
   success: boolean;
   data?: {
+    ScanQR?: Array<{
+      Status: string;
+      Date: string;
+      IIN: string;
+      ID: string;
+    }>;
     scoreRb?: {
       status: string;
       date: string;
@@ -68,11 +74,40 @@ const bankStatementService = {
       // Process the response data regardless of status (since sometimes status is undefined)
       const apiData = response.data || {};
       
-      // If API returns data, we consider it successful unless there are explicit errors
-      const hasErrors = !!(apiData.ErrorCode || apiData.ErrorMessage);
+      console.log('Analyzing API response for success determination:', {
+        apiDataSuccess: apiData.success,
+        hasErrorCode: !!apiData.ErrorCode,
+        hasErrorMessage: !!apiData.ErrorMessage,
+        scanQRStatus: apiData.ScanQR?.[0]?.Status,
+        fullApiData: apiData
+      });
+      
+      // Determine success based on multiple factors:
+      // 1. API should return success: true
+      // 2. No explicit error codes/messages
+      // 3. If ScanQR exists, it should have Status: "OK"
+      let isSuccessful = false;
+      
+      if (apiData.success === true) {
+        // API says success, now check for business logic errors
+        const hasErrors = !!(apiData.ErrorCode || apiData.ErrorMessage);
+        
+        if (!hasErrors) {
+          // No explicit errors, check ScanQR status if available
+          if (apiData.ScanQR && apiData.ScanQR.length > 0) {
+            // If ScanQR exists, check its status
+            isSuccessful = apiData.ScanQR[0].Status === "OK";
+          } else {
+            // No ScanQR data, but API says success and no errors - consider successful
+            isSuccessful = true;
+          }
+        }
+      }
+      
+      console.log('Final success determination:', isSuccessful);
       
       const result: BankStatementCheckResponse = {
-        success: !hasErrors, // Success if no explicit errors
+        success: isSuccessful,
         data: apiData,
         // Don't spread apiData here as it might override our success value
         message: apiData.message,
