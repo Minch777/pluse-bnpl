@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import authService from '@/api/services/authService';
+import { authService } from '@/api/services/authService';
 import axios from 'axios';
 
 export default function TestLoginPage() {

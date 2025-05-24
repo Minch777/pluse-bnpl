@@ -19,6 +19,29 @@ export interface Merchant {
   outlets: Outlet[];
 }
 
+// Types for admin merchant data (from /merchant/admin/all endpoint)
+export interface AdminMerchant {
+  id: string;
+  publicId: string;
+  companyName: string;
+  contactEmail: string;
+  phoneNumber: string;
+  bin: string;
+  directorName: string;
+  website: string;
+  address: string;
+  bankBik: string;
+  bankName: string;
+  bankAccount: string;
+  bankBeneficiaryCode?: string;
+  isBlocked: boolean;
+  blockedAt: string | null;
+  blockedBy: string | null;
+  blockReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Types for merchant profile
 export interface MerchantProfile {
   id: string;
@@ -145,6 +168,75 @@ const merchantService = {
       return response as unknown as ApplicationLink;
     } catch (error) {
       console.error('Error creating application link:', error);
+      throw error;
+    }
+  },
+
+  // Get all merchants (admin only)
+  getAllMerchants: async (): Promise<AdminMerchant[]> => {
+    console.log('Calling getAllMerchants API at:', '/merchant/admin/all');
+    
+    // Log current token status for admin access
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      console.log('Admin token status:', token ? 'Token exists' : 'No token found');
+      if (token) {
+        console.log('Token value:', token);
+      }
+    }
+    
+    try {
+      console.log('Sending admin merchants request');
+      const response = await axiosClient.get('/merchant/admin/all');
+      console.log('Raw API response:', response);
+      
+      // Check if response has data property
+      if (response && typeof response === 'object' && 'data' in response) {
+        const merchants = response.data;
+        if (Array.isArray(merchants)) {
+          console.log('Merchants array from data:', merchants);
+          return merchants as AdminMerchant[];
+        }
+      }
+      
+      // If response is already an array
+      if (Array.isArray(response)) {
+        console.log('Response is array:', response);
+        return response as AdminMerchant[];
+      }
+      
+      console.warn('API returned unexpected format, returning empty array');
+      return [];
+    } catch (error) {
+      console.error('Error fetching admin merchants data:', error);
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+      throw error;
+    }
+  },
+
+  // Block merchant (admin only)
+  blockMerchant: async (merchantId: string, reason: string): Promise<void> => {
+    console.log('Calling blockMerchant API for:', merchantId);
+    try {
+      await axiosClient.post(`/merchant/admin/${merchantId}/block`, { reason });
+      console.log('Merchant blocked successfully');
+    } catch (error) {
+      console.error('Error blocking merchant:', error);
+      throw error;
+    }
+  },
+
+  // Unblock merchant (admin only)
+  unblockMerchant: async (merchantId: string): Promise<void> => {
+    console.log('Calling unblockMerchant API for:', merchantId);
+    try {
+      await axiosClient.post(`/merchant/admin/${merchantId}/unblock`);
+      console.log('Merchant unblocked successfully');
+    } catch (error) {
+      console.error('Error unblocking merchant:', error);
       throw error;
     }
   }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useMutation } from '@tanstack/react-query';
 import { 
   UserCircleIcon, 
   KeyIcon, 
@@ -23,11 +24,13 @@ import {
   EyeIcon,
   EyeSlashIcon,
   IdentificationIcon,
-  BuildingLibraryIcon
+  BuildingLibraryIcon,
+  LockClosedIcon
 } from '@heroicons/react/24/outline';
 import { SparklesIcon } from '@heroicons/react/24/solid';
 import Modal from '@/components/Modal';
 import merchantService, { MerchantProfile, UpdateMerchantProfileRequest } from '@/api/services/merchantService';
+import { authService, ChangePasswordData } from '@/api/services/authService';
 
 export default function MerchantSettings() {
   const router = useRouter();
@@ -41,6 +44,10 @@ export default function MerchantSettings() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  
+  // Password change error state
+  const [passwordChangeError, setPasswordChangeError] = useState<string | null>(null);
+  const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
   
   // Merchant profile state
   const [merchantProfile, setMerchantProfile] = useState<MerchantProfile | null>(null);
@@ -64,6 +71,35 @@ export default function MerchantSettings() {
 
   // Validation errors state
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+
+  // Password change mutation
+  const passwordMutation = useMutation({
+    mutationFn: (data: ChangePasswordData) => authService.changePassword(data),
+    onSuccess: () => {
+      console.log('Password changed successfully');
+      setPasswordChangeSuccess(true);
+      setPasswordChangeError(null);
+      
+      // Clear password fields
+      setFormData(prev => ({
+        ...prev,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      }));
+      
+      // Close modal after 2 seconds and reset success message
+      setTimeout(() => {
+        setShowPasswordModal(false);
+        setPasswordChangeSuccess(false);
+      }, 2000);
+    },
+    onError: (error: any) => {
+      console.error('Password change error:', error);
+      setPasswordChangeError(error.message || 'Не удалось изменить пароль');
+      setPasswordChangeSuccess(false);
+    }
+  });
 
   // Load merchant profile on component mount
   useEffect(() => {
@@ -212,6 +248,11 @@ export default function MerchantSettings() {
       });
     }
 
+    // Clear password change errors when user types in password fields
+    if (['currentPassword', 'newPassword', 'confirmPassword'].includes(name) && passwordChangeError) {
+      setPasswordChangeError(null);
+    }
+
     // Real-time validation for specific fields
     if (name === 'bankBik') {
       const error = validateBik(value);
@@ -228,9 +269,42 @@ export default function MerchantSettings() {
 
   const handlePasswordChange = (e: React.FormEvent) => {
     e.preventDefault();
-    // Here will be the logic to change password
-    console.log('Changing password');
-    setShowPasswordModal(false);
+    
+    // Clear previous errors
+    setPasswordChangeError(null);
+    
+    // Validate password fields
+    if (!formData.currentPassword) {
+      setPasswordChangeError('Введите текущий пароль');
+      return;
+    }
+    
+    if (!formData.newPassword) {
+      setPasswordChangeError('Введите новый пароль');
+      return;
+    }
+    
+    if (formData.newPassword.length < 8) {
+      setPasswordChangeError('Новый пароль должен содержать минимум 8 символов');
+      return;
+    }
+    
+    if (formData.newPassword !== formData.confirmPassword) {
+      setPasswordChangeError('Пароли не совпадают');
+      return;
+    }
+    
+    if (formData.currentPassword === formData.newPassword) {
+      setPasswordChangeError('Новый пароль должен отличаться от текущего');
+      return;
+    }
+    
+    // Call API to change password
+    passwordMutation.mutate({
+      currentPassword: formData.currentPassword,
+      newPassword: formData.newPassword,
+      confirmPassword: formData.confirmPassword
+    });
   };
 
   return (
@@ -254,16 +328,6 @@ export default function MerchantSettings() {
           }`}
         >
           Профиль компании
-        </button>
-        <button
-          onClick={() => setActiveTab('security')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-            activeTab === 'security' 
-              ? 'bg-white text-slate-900 shadow-sm' 
-              : 'text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          Безопасность
         </button>
         <button
           onClick={() => setActiveTab('requisites')}
@@ -340,21 +404,33 @@ export default function MerchantSettings() {
                   />
 
                   <FormGroup
-                    icon={<BuildingLibraryIcon className="w-4 h-4 text-sky-600" />}
-                    label="БИН"
-                    value={formData.bin}
-                    onChange={handleInputChange}
-                    name="bin"
-                    placeholder="12 цифр"
-                  />
-
-                  <FormGroup
                     icon={<IdentificationIcon className="w-4 h-4 text-sky-600" />}
                     label="ФИО руководителя"
                     value={formData.directorName}
                     onChange={handleInputChange}
                     name="directorName"
                     placeholder="ФИО руководителя компании"
+                  />
+
+                  <FormGroup
+                    icon={<BuildingLibraryIcon className="w-4 h-4 text-sky-600" />}
+                    label="БИН"
+                    value={formData.bin}
+                    onChange={handleInputChange}
+                    name="bin"
+                    placeholder="12 цифр"
+                    disabled={true}
+                  />
+
+                  <FormGroup
+                    icon={<EnvelopeIcon className="w-4 h-4 text-sky-600" />}
+                    label="Email"
+                    value={formData.contactEmail}
+                    onChange={handleInputChange}
+                    name="contactEmail"
+                    placeholder="Ваш контактный email"
+                    type="email"
+                    disabled={true}
                   />
                   
                   <FormGroup
@@ -367,16 +443,6 @@ export default function MerchantSettings() {
                   />
                   
                   <FormGroup
-                    icon={<EnvelopeIcon className="w-4 h-4 text-sky-600" />}
-                    label="Email"
-                    value={formData.contactEmail}
-                    onChange={handleInputChange}
-                    name="contactEmail"
-                    placeholder="Ваш контактный email"
-                    type="email"
-                  />
-                  
-                  <FormGroup
                     icon={<PhoneIcon className="w-4 h-4 text-sky-600" />}
                     label="Телефон"
                     value={formData.phoneNumber}
@@ -385,7 +451,9 @@ export default function MerchantSettings() {
                     placeholder="Контактный телефон"
                     type="tel"
                   />
-                  
+                </div>
+                
+                <div className="grid grid-cols-1 gap-8">
                   <FormGroup
                     icon={<MapPinIcon className="w-4 h-4 text-sky-600" />}
                     label="Адрес"
@@ -396,88 +464,27 @@ export default function MerchantSettings() {
                   />
                 </div>
 
-                <div className="pt-6 border-t border-gray-100 flex items-center justify-end">
+                <div className="pt-6 border-t border-gray-100 flex items-center justify-between">
+                  <button
+                    onClick={() => setShowPasswordModal(true)}
+                    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all
+                      ${passwordMutation.isPending || passwordChangeSuccess 
+                        ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-300'
+                      }`}
+                    disabled={passwordMutation.isPending || passwordChangeSuccess}
+                  >
+                    {passwordMutation.isPending && <ArrowPathIcon className="w-4 h-4 animate-spin" />}
+                    {passwordChangeSuccess && <CheckIcon className="w-4 h-4" />}
+                    <KeyIcon className="w-4 h-4" />
+                    {passwordMutation.isPending ? 'Обновление...' : passwordChangeSuccess ? 'Пароль обновлен' : 'Обновить пароль'}
+                  </button>
+                  
                   <SaveButton 
                     onClick={handleSave} 
                     saving={saving} 
                     success={success} 
                   />
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'security' && (
-              <div className="p-6 space-y-8">
-                <div className="flex items-center gap-4 pb-6 border-b border-gray-100">
-                  <div className="w-12 h-12 rounded-full bg-sky-50 flex items-center justify-center">
-                    <ShieldCheckIcon className="w-6 h-6 text-sky-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-medium text-slate-800">Безопасность</h2>
-                    <p className="text-sm text-slate-500">Обновите ваш пароль для безопасности аккаунта</p>
-                  </div>
-                </div>
-
-                <div className="space-y-6 max-w-md">
-                  <FormGroup
-                    icon={<KeyIcon className="w-4 h-4 text-sky-600" />}
-                    label="Текущий пароль"
-                    value={formData.currentPassword}
-                    onChange={handleInputChange}
-                    name="currentPassword"
-                    placeholder="Введите текущий пароль"
-                    type="password"
-                  />
-                  
-                  <FormGroup
-                    icon={<KeyIcon className="w-4 h-4 text-sky-600" />}
-                    label="Новый пароль"
-                    value={formData.newPassword}
-                    onChange={handleInputChange}
-                    name="newPassword"
-                    placeholder="Введите новый пароль"
-                    type="password"
-                  />
-                  
-                  <FormGroup
-                    icon={<KeyIcon className="w-4 h-4 text-sky-600" />}
-                    label="Подтвердите новый пароль"
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    name="confirmPassword"
-                    placeholder="Введите новый пароль снова"
-                    type="password"
-                  />
-                  
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-700 flex items-start gap-3 mt-8">
-                    <div className="mt-0.5 flex-shrink-0">
-                      <ShieldCheckIcon className="w-5 h-5 text-amber-500" />
-                    </div>
-                    <div>
-                      <p className="font-medium mb-1">Рекомендации для безопасности:</p>
-                      <ul className="space-y-1 list-disc list-inside ml-1">
-                        <li>Используйте как минимум 8 символов</li>
-                        <li>Используйте комбинацию букв, цифр и спецсимволов</li>
-                        <li>Не используйте один и тот же пароль для разных сервисов</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-6 border-t border-gray-100 flex justify-end">
-                  <button
-                    onClick={() => setShowPasswordModal(true)}
-                    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium 
-                      ${saving || success 
-                        ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
-                        : 'bg-sky-600 text-white hover:bg-sky-700 focus:ring-2 focus:ring-offset-2 focus:ring-sky-500'
-                      } transition-all`}
-                    disabled={saving || success}
-                  >
-                    {saving && <ArrowPathIcon className="w-4 h-4 animate-spin" />}
-                    {success && <CheckIcon className="w-4 h-4" />}
-                    {saving ? 'Обновление...' : success ? 'Пароль обновлен' : 'Обновить пароль'}
-                  </button>
                 </div>
               </div>
             )}
@@ -587,6 +594,18 @@ export default function MerchantSettings() {
           </div>
 
           <form onSubmit={handlePasswordChange} className="space-y-4">
+            {passwordChangeError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+                {passwordChangeError}
+              </div>
+            )}
+            
+            {passwordChangeSuccess && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
+                Пароль успешно изменен!
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Текущий пароль
@@ -598,11 +617,13 @@ export default function MerchantSettings() {
                   value={formData.currentPassword}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                  disabled={passwordMutation.isPending}
                 />
                 <button
                   type="button"
                   onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  disabled={passwordMutation.isPending}
                 >
                   {showCurrentPassword ? (
                     <EyeSlashIcon className="w-5 h-5" />
@@ -624,11 +645,13 @@ export default function MerchantSettings() {
                   value={formData.newPassword}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                  disabled={passwordMutation.isPending}
                 />
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  disabled={passwordMutation.isPending}
                 >
                   {showNewPassword ? (
                     <EyeSlashIcon className="w-5 h-5" />
@@ -650,11 +673,13 @@ export default function MerchantSettings() {
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                  disabled={passwordMutation.isPending}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  disabled={passwordMutation.isPending}
                 >
                   {showConfirmPassword ? (
                     <EyeSlashIcon className="w-5 h-5" />
@@ -670,14 +695,21 @@ export default function MerchantSettings() {
                 type="button"
                 onClick={() => setShowPasswordModal(false)}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={passwordMutation.isPending}
               >
                 Отмена
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-sky-600 text-white rounded-lg text-sm font-medium hover:bg-sky-700 transition-colors"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2
+                  ${passwordMutation.isPending 
+                    ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
+                    : 'bg-sky-600 text-white hover:bg-sky-700'
+                  }`}
+                disabled={passwordMutation.isPending}
               >
-                Сохранить
+                {passwordMutation.isPending && <ArrowPathIcon className="w-4 h-4 animate-spin" />}
+                {passwordMutation.isPending ? 'Сохранение...' : 'Сохранить'}
               </button>
             </div>
           </form>
@@ -735,6 +767,7 @@ interface FormGroupProps {
   type?: string;
   rows?: number;
   error?: string;
+  disabled?: boolean;
 }
 
 function FormGroup({ 
@@ -747,7 +780,8 @@ function FormGroup({
   textarea = false, 
   type = "text", 
   rows = 3,
-  error
+  error,
+  disabled = false
 }: FormGroupProps) {
   return (
     <div className="space-y-2">
@@ -758,6 +792,11 @@ function FormGroup({
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           {icon}
         </div>
+        {disabled && (
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+            <LockClosedIcon className="w-4 h-4 text-gray-400" />
+          </div>
+        )}
         {textarea ? (
           <textarea
             name={name}
@@ -765,9 +804,10 @@ function FormGroup({
             onChange={onChange}
             placeholder={placeholder}
             rows={rows}
+            disabled={disabled}
             className={`block w-full pl-10 pr-3 py-2 bg-white border rounded-lg shadow-sm focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-sm text-gray-700 ${
               error ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300'
-            }`}
+            } ${disabled ? 'bg-gray-50 text-gray-500 cursor-not-allowed border-gray-200 pr-10' : ''}`}
           />
         ) : (
           <input
@@ -776,9 +816,10 @@ function FormGroup({
             value={value}
             onChange={onChange}
             placeholder={placeholder}
+            disabled={disabled}
             className={`block w-full pl-10 pr-3 py-2 bg-white border rounded-lg shadow-sm focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-sm text-gray-700 ${
               error ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300'
-            }`}
+            } ${disabled ? 'bg-gray-50 text-gray-500 cursor-not-allowed border-gray-200 pr-10' : ''}`}
           />
         )}
       </div>

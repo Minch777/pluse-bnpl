@@ -27,11 +27,16 @@ export interface ApplicationFilterParams {
   page?: number;
   limit?: number;
   status?: string;
-  period?: 'day' | 'yesterday' | 'week' | 'month';
+  period?: 'today' | 'yesterday' | 'week' | 'month';
   date_from?: string;
   date_to?: string;
-  client_name?: string; // Renamed from search to client_name for backend API compatibility
-  shortId?: number; // Added for searching by application ID (shown as just ID on frontend)
+  client_name?: string;
+  shortId?: number;
+  search?: string;
+  min_amount?: number;
+  max_amount?: number;
+  loan_type?: string;
+  merchant_search?: string;
 }
 
 // Shape of the API response
@@ -97,12 +102,39 @@ function mapApiStatusToApplicationStatus(apiStatus: string): string {
   return apiStatus;
 }
 
+// Shape of the API response for admin
+interface AdminApiResponse {
+  data: Array<{
+    id: string;
+    shortId: number;
+    amount: number;
+    status: string;
+    firstName: string;
+    lastName: string;
+    middleName?: string;
+    createdAt: string;
+    updatedAt: string;
+    merchantId: string;
+    merchantName: string;
+    merchantBin: string;
+    loanType: string;
+    term: number;
+    iin: string;
+    phone: string;
+  }>;
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+  };
+}
+
 // Applications service
 const applicationService = {
-  // Get list of applications with optional filtering
+  // Get list of applications with optional filtering (for merchants)
   getApplications: async (params?: ApplicationFilterParams) => {
     try {
-      console.log('Requesting applications with params:', params);
+      console.log('Requesting merchant applications with params:', params);
       
       // If search is empty string, remove it to avoid API issues
       if (params?.client_name === '') {
@@ -113,7 +145,6 @@ const applicationService = {
       if (params?.shortId !== undefined) {
         // Make sure shortId is a number
         if (typeof params.shortId === 'string') {
-          // If it's a string (e.g. "#123"), try to convert it to a number
           const idString = params.shortId as string;
           if (idString.startsWith('#')) {
             params.shortId = parseInt(idString.substring(1));
@@ -127,22 +158,19 @@ const applicationService = {
       
       const response = await axiosClient.get('/applications', { params });
       
-      // Check if we have the API formatted response
+      // Process response...
       if (response && 'data' in response && 'meta' in response) {
         console.log('API response format detected, transforming data');
         const apiResponse = response as ApiApplicationResponse;
         
-        // Map the API response to our application model
         const applications = apiResponse.data.map(app => ({
-          id: app.shortId ? `#${app.shortId}` : app.id, // Use shortId if available, fallback to UUID
-          originalId: app.id, // Сохраняем оригинальный UUID для API запросов
+          id: app.shortId ? `#${app.shortId}` : app.id,
+          originalId: app.id,
           customerName: `${app.firstName} ${app.lastName}`,
           amount: app.amount,
           status: mapApiStatusToApplicationStatus(app.status),
           date: new Date(app.createdAt).toLocaleDateString('ru-RU')
         }));
-        
-        console.log('Transformed applications:', applications);
         
         return {
           applications,
@@ -150,12 +178,7 @@ const applicationService = {
         } as ApplicationsResponse;
       }
       
-      // Return the response directly if it already matches our expected format
-      // Но преобразуем статусы к нашему формату
-      console.log('Response already in expected format:', response);
-      
       if (response && 'applications' in response) {
-        // Fix typing issues by safely asserting data type
         const responseData = response as any;
         const applications = responseData.applications.map((app: any) => ({
           ...app,
@@ -168,14 +191,58 @@ const applicationService = {
         } as ApplicationsResponse;
       }
       
-      // If we reach here, we need to convert the response to our format
-      // This is a safer approach than just casting directly
       return {
         applications: [],
         total: 0
       } as ApplicationsResponse;
     } catch (error) {
       console.error('Error in getApplications:', error);
+      throw error;
+    }
+  },
+
+  // Get list of applications for admin panel
+  getAdminApplications: async (params?: ApplicationFilterParams) => {
+    try {
+      console.log('=== APPLICATION SERVICE ===');
+      console.log('Requesting admin applications with params:', params);
+      console.log('Date from:', params?.date_from);
+      console.log('Date to:', params?.date_to);
+      
+      // Filter out undefined values
+      const cleanParams = Object.entries(params || {}).reduce((acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = value;
+        }
+        return acc;
+      }, {} as any);
+      
+      console.log('Clean params being sent:', cleanParams);
+      
+      const response = await axiosClient.get<AdminApiResponse>('/applications/admin/all', { params: cleanParams });
+      console.log('Admin applications response:', response);
+
+      if (response && typeof response === 'object' && 'data' in response) {
+        const data = response.data;
+        const applications = Array.isArray(data) ? data.map(app => ({
+          ...app,
+          clientName: `${app.firstName} ${app.lastName}${app.middleName ? ' ' + app.middleName : ''}`.trim()
+        })) : [];
+
+        return {
+          applications,
+          total: response.meta?.total || applications.length
+        };
+      }
+
+      // Если структура ответа не соответствует ожидаемой
+      console.warn('Unexpected response format:', response);
+      return {
+        applications: [],
+        total: 0
+      };
+    } catch (error) {
+      console.error('Error in getAdminApplications:', error);
       throw error;
     }
   },

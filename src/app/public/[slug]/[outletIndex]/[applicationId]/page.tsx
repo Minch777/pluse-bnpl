@@ -345,10 +345,14 @@ export default function ApplicationPage({
             includesPeriod: statementError.message?.includes('period'),
             includesУстарела: statementError.message?.includes('устарела'),
             includesDate: statementError.message?.includes('date'),
-            includesWrongDate: statementError.message?.includes('wrong date')
+            includesWrongDate: statementError.message?.includes('wrong date'),
+            includesWrongIIN: statementError.message?.toLowerCase().includes('wrong iin')
           });
           
-          if (statementError.message && (statementError.message.includes('дата') || 
+          if (statementError.message && statementError.message.toLowerCase().includes('wrong iin')) {
+            errorMessage = 'ИИН в выписке не совпадает с указанным в заявке. Пожалуйста, проверьте правильность введенного ИИН или загрузите выписку с соответствующего счета.';
+            console.log('Setting wrong IIN error message');
+          } else if (statementError.message && (statementError.message.includes('дата') || 
               statementError.message.includes('period') ||
               statementError.message.includes('устарела') ||
               statementError.message.includes('date') ||
@@ -524,10 +528,14 @@ export default function ApplicationPage({
             includesPeriod: statementError.message?.includes('period'),
             includesУстарела: statementError.message?.includes('устарела'),
             includesDate: statementError.message?.includes('date'),
-            includesWrongDate: statementError.message?.includes('wrong date')
+            includesWrongDate: statementError.message?.includes('wrong date'),
+            includesWrongIIN: statementError.message?.toLowerCase().includes('wrong iin')
           });
           
-          if (statementError.message && (statementError.message.includes('дата') || 
+          if (statementError.message && statementError.message.toLowerCase().includes('wrong iin')) {
+            errorMessage = 'ИИН в выписке не совпадает с указанным в заявке. Пожалуйста, проверьте правильность введенного ИИН или загрузите выписку с соответствующего счета.';
+            console.log('Setting wrong IIN error message');
+          } else if (statementError.message && (statementError.message.includes('дата') || 
               statementError.message.includes('period') ||
               statementError.message.includes('устарела') ||
               statementError.message.includes('date') ||
@@ -878,10 +886,14 @@ export default function ApplicationPage({
                 includesPeriod: statementError.message?.includes('period'),
                 includesУстарела: statementError.message?.includes('устарела'),
                 includesDate: statementError.message?.includes('date'),
-                includesWrongDate: statementError.message?.includes('wrong date')
+                includesWrongDate: statementError.message?.includes('wrong date'),
+                includesWrongIIN: statementError.message?.toLowerCase().includes('wrong iin')
               });
               
-              if (statementError.message && (statementError.message.includes('дата') || 
+              if (statementError.message && statementError.message.toLowerCase().includes('wrong iin')) {
+                errorMessage = 'ИИН в выписке не совпадает с указанным в заявке. Пожалуйста, проверьте правильность введенного ИИН или загрузите выписку с соответствующего счета.';
+                console.log('Setting wrong IIN error message in handleNext');
+              } else if (statementError.message && (statementError.message.includes('дата') || 
                   statementError.message.includes('period') ||
                   statementError.message.includes('устарела') ||
                   statementError.message.includes('date') ||
@@ -1516,14 +1528,25 @@ export default function ApplicationPage({
                 <XCircleIcon className="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-medium text-amber-700">
-                    {statementCheckError.includes('дата') || statementCheckError.includes('устарела') ||
-                     statementCheckError.includes('date') || statementCheckError.includes('wrong date')
-                      ? 'Данные в выписке устарели' 
-                      : '⚠️ Выписка не обработана'
+                    {statementCheckError.toLowerCase().includes('wrong iin') || statementCheckError.includes('не совпадает')
+                      ? 'Несоответствие ИИН' 
+                      : statementCheckError.includes('дата') || statementCheckError.includes('устарела') ||
+                        statementCheckError.includes('date') || statementCheckError.includes('wrong date')
+                        ? 'Данные в выписке устарели' 
+                        : '⚠️ Выписка не обработана'
                     }
                   </p>
                   <div className="mt-1">
-                    {(statementCheckError.includes('дата') || statementCheckError.includes('устарела') || 
+                    {statementCheckError.toLowerCase().includes('wrong iin') || statementCheckError.includes('не совпадает') ? (
+                      <>
+                        <p className="text-xs text-amber-600">
+                          {statementCheckError}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-2">
+                          Вы можете исправить ИИН на предыдущем шаге или продолжить без выписки.
+                        </p>
+                      </>
+                    ) : (statementCheckError.includes('дата') || statementCheckError.includes('устарела') || 
                       statementCheckError.includes('date') || statementCheckError.includes('wrong date')) ? (
                       <>
                         <p className="text-xs text-amber-600">

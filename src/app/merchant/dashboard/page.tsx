@@ -71,21 +71,18 @@ function StatCard({
   highlight?: boolean;
 }) {
   return (
-    <div className={`rounded-lg border p-6 transition-all duration-150 shadow-sm
+    <div className={`rounded-lg border p-4 transition-all duration-150 shadow-sm flex items-center gap-4
       ${highlight 
-        ? 'bg-gradient-to-br from-sky-50 to-sky-100/70 border-sky-100 hover:shadow-md' 
-        : 'bg-white border-slate-200 hover:border-sky-200 hover:shadow-md'
+        ? 'bg-gradient-to-br from-sky-50 to-sky-100/70 border-sky-100' 
+        : 'bg-white border-slate-200'
       }`
     }>
-      <div className="flex items-center gap-3 mb-4">
-        <div className={`p-2 rounded-lg ${highlight ? 'bg-sky-100 text-sky-600' : 'bg-slate-50 text-slate-500'}`}>
-          {icon}
-        </div>
-        <span className="text-sm font-medium text-slate-600">{title}</span>
+      <div className={`flex-shrink-0 p-2 rounded-lg ${highlight ? 'bg-sky-100 text-sky-600' : 'bg-slate-50 text-slate-500'}`}>
+        {icon}
       </div>
-      
-      <div className="flex items-baseline gap-2">
-        <h3 className={`text-[28px] font-bold text-slate-800`}>{value}</h3>
+      <div>
+        <span className="block text-sm font-medium text-slate-600 mb-0.5">{title}</span>
+        <span className={`text-xl font-bold text-slate-800`}>{value}</span>
       </div>
     </div>
   );
@@ -820,9 +817,9 @@ export default function MerchantDashboard() {
       </div>
 
       {/* Stats cards with clean design */}
-      <div className="mb-8">
+      <div className="mb-6">
         {/* Grid of metric cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Approved Applications Card - HIGHLIGHT THIS ONE */}
           <StatCard 
             title="Выдано"
@@ -840,7 +837,7 @@ export default function MerchantDashboard() {
           
           {/* Applications Count Card */}
           <StatCard 
-            title="Кол-во заявок"
+            title="Кол-во выданных заявок"
             value={metrics.totalApplications.toString()}
             icon={<DocumentTextIcon className="w-5 h-5" />}
           />

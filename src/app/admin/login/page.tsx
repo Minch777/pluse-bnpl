@@ -9,60 +9,72 @@ import { EyeIcon, EyeSlashIcon, ArrowRightIcon, ExclamationCircleIcon } from '@h
 import { useMutation } from '@tanstack/react-query';
 import { authService, LoginData } from '@/api/services/authService';
 
-export default function LoginPage() {
+export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
-  // Используем React Query для мутации входа
-  const loginMutation = useMutation({
-    mutationFn: (data: LoginData) => authService.login(data),
+  // Используем React Query для мутации входа администратора
+  const adminLoginMutation = useMutation({
+    mutationFn: async (data: LoginData) => {
+      console.log('Starting admin login mutation with:', { email: data.email });
+      try {
+        const response = await authService.adminLogin(data);
+        console.log('Admin login successful:', { 
+          success: true,
+          hasToken: !!response.token || !!response.accessToken,
+          role: response.role,
+          fullResponse: response
+        });
+        return response;
+      } catch (error) {
+        console.error('Admin login mutation error:', error);
+        throw error;
+      }
+    },
     onSuccess: (data) => {
-      console.log('Login mutation onSuccess called with data:', data);
+      console.log('Admin login mutation onSuccess called with data:', data);
       
       // Дополнительная проверка данных перед перенаправлением
       if (!data) {
-        console.error('Login success but no data received');
+        console.error('Admin login success but no data received');
         setError('Ошибка: данные не получены от сервера');
         return;
       }
       
       // Проверяем наличие токена в localStorage (должен был сохраниться в authService)
       const savedToken = localStorage.getItem('token');
+      console.log('Token in localStorage after login:', savedToken);
+      
       if (!savedToken) {
-        console.error('Login success but no token in localStorage');
+        console.error('Admin login success but no token in localStorage');
         setError('Ошибка: токен не сохранен');
         return;
       }
       
-      // Проверяем роль - если ADMIN, то перенаправляем на страницу логина администратора
-      if (data.role === 'ADMIN') {
-        console.log('Admin detected, redirecting to admin login page');
-        setError('Вы администратор. Перенаправляем на страницу входа для администраторов...');
-        setTimeout(() => {
-          router.push('/admin/login');
-        }, 1500);
-        return;
-      }
+      // После успешного входа перенаправляем на dashboard админа
+      console.log('Redirecting admin to /admin/dashboard');
+      console.log('Router object:', router);
       
-      // Для мерчантов обычное перенаправление на дашборд
-      console.log('Redirecting merchant to /merchant/dashboard');
-      router.push('/merchant/dashboard');
+      // Пробуем сразу редиректить
+      try {
+        router.push('/admin/dashboard');
+        console.log('Router.push executed');
+      } catch (routerError) {
+        console.error('Router.push error:', routerError);
+        // Альтернативный метод редиректа
+        window.location.href = '/admin/dashboard';
+      }
     },
     onError: (error: any) => {
-      console.error('Login error:', error);
-      
-      // Проверяем, нужно ли перенаправить на страницу логина администратора
-      if (error.shouldRedirectToAdmin) {
-        setError('Вы администратор. Перенаправляем на страницу входа для администраторов...');
-        setTimeout(() => {
-          router.push('/admin/login');
-        }, 1500);
-        return;
-      }
-      
+      console.error('Admin login mutation onError:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.status,
+        data: error.data
+      });
       // Используем сообщение об ошибке, которое уже обработал axiosClient
       const errorMessage = error.message || 'Произошла ошибка при входе. Попробуйте еще раз.';
       setError(errorMessage);
@@ -73,8 +85,15 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     
+    // Проверяем входные данные
+    if (!email || !password) {
+      setError('Пожалуйста, заполните все поля');
+      return;
+    }
+    
     // Выполняем запрос через React Query
-    loginMutation.mutate({ email, password });
+    console.log('Submitting admin login form');
+    adminLoginMutation.mutate({ email, password });
   };
 
   return (
@@ -88,15 +107,16 @@ export default function LoginPage() {
               width={140}
               height={40}
               className="mx-auto"
+              priority
             />
           </Link>
           <p className="mt-2 text-slate-500">
-            Сервис рассрочки для предпринимателей
+            Панель администратора
           </p>
         </div>
         
         <div className="bg-white rounded-xl shadow-md p-8 border border-slate-200">
-          <h2 className="text-2xl font-bold text-slate-800 mb-6">Добро пожаловать</h2>
+          <h2 className="text-2xl font-bold text-slate-800 mb-6">Вход в систему</h2>
           
           {error && (
             <div className="mb-6 p-4 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center">
@@ -126,7 +146,7 @@ export default function LoginPage() {
                     setError('');
                   }}
                   className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 text-slate-900 placeholder-slate-400 transition-all"
-                  placeholder="example@company.com"
+                  placeholder="admin@example.com"
                   required
                 />
               </div>
@@ -168,7 +188,7 @@ export default function LoginPage() {
               </div>
             </div>
             
-            <div className="flex items-center justify-between">
+            <div className="flex items-center">
               <div className="flex items-center">
                 <input
                   id="remember"
@@ -179,29 +199,17 @@ export default function LoginPage() {
                   Запомнить меня
                 </label>
               </div>
-              <a href="#" className="text-sm font-medium text-sky-600 hover:text-sky-700 hover:underline transition-colors">
-                Забыли пароль?
-              </a>
             </div>
             
             <Button
               type="submit"
               fullWidth
-              isLoading={loginMutation.isPending}
+              isLoading={adminLoginMutation.isPending}
               className="py-3 text-base font-medium rounded-lg bg-sky-600 hover:bg-sky-700"
             >
               <span>Войти</span>
-              {!loginMutation.isPending && <ArrowRightIcon className="ml-2 h-5 w-5" />}
+              {!adminLoginMutation.isPending && <ArrowRightIcon className="ml-2 h-5 w-5" />}
             </Button>
-            
-            <div className="text-center mt-4">
-              <p className="text-sm text-slate-600">
-                Нет аккаунта?{' '}
-                <Link href="/register" className="font-medium text-sky-600 hover:text-sky-700 hover:underline transition-colors">
-                  Зарегистрируйтесь
-                </Link>
-              </p>
-            </div>
           </form>
         </div>
       </div>

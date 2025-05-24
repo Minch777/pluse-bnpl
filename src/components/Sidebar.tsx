@@ -40,15 +40,13 @@ const merchantLinks = [
   { href: '/merchant/dashboard', label: 'Заявки', icon: DocumentTextIcon },
   { href: '/merchant/link', label: 'QR и ссылка', icon: LinkIcon },
   { href: '/merchant/terms', label: 'Банки', icon: BanknotesIcon },
-  { href: '/merchant/materials', label: 'Материалы', icon: PhotoIcon },
+  // { href: '/merchant/materials', label: 'Материалы', icon: PhotoIcon }, // Временно скрыто
   { href: '/merchant/settings', label: 'Настройки', icon: Cog6ToothIcon },
 ];
 
 const adminLinks = [
-  { href: '/admin/dashboard', label: 'Статистика', icon: ChartBarIcon },
+  { href: '/admin/dashboard', label: 'Заявки', icon: ChartBarIcon },
   { href: '/admin/merchants', label: 'Мерчанты', icon: UsersIcon },
-  { href: '/admin/applications', label: 'Заявки', icon: DocumentTextIcon },
-  { href: '/admin/settings', label: 'Настройки', icon: Cog6ToothIcon },
 ];
 
 type SidebarProps = {
@@ -150,22 +148,24 @@ export default function Sidebar({ userRole = 'MERCHANT' }: SidebarProps) {
             </nav>
             
             {/* Multilink promo section - mobile */}
-            <div className="px-4 mt-2 mb-6">
-              <div className="p-4 bg-white rounded-lg shadow-md border border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="p-1.5 bg-sky-50 rounded-md">
-                    <LinkIcon className="h-4 w-4 text-sky-600" />
+            {userRole === 'MERCHANT' && (
+              <div className="px-4 mt-2 mb-6">
+                <div className="p-4 bg-white rounded-lg shadow-md border border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="p-1.5 bg-sky-50 rounded-md">
+                      <LinkIcon className="h-4 w-4 text-sky-600" />
+                    </div>
+                    <p className="text-sm font-medium text-gray-800">Подключите все банки в один QR</p>
                   </div>
-                  <p className="text-sm font-medium text-gray-800">Подключите все банки в один QR</p>
+                  <button 
+                    onClick={handleQRBenefitsButtonClick}
+                    className="mt-3 w-full h-9 bg-transparent border border-sky-500 text-sky-600 rounded-lg text-sm font-medium hover:bg-sky-50 transition-colors"
+                  >
+                    Подробнее
+                  </button>
                 </div>
-                <button 
-                  onClick={handleQRBenefitsButtonClick}
-                  className="mt-3 w-full h-9 bg-transparent border border-sky-500 text-sky-600 rounded-lg text-sm font-medium hover:bg-sky-50 transition-colors"
-                >
-                  Подробнее
-                </button>
               </div>
-            </div>
+            )}
           </div>
           
           {/* Help and Support section - mobile */}
@@ -263,7 +263,7 @@ export default function Sidebar({ userRole = 'MERCHANT' }: SidebarProps) {
             </nav>
             
             {/* Multilink promo section */}
-            {!isCollapsed && (
+            {!isCollapsed && userRole === 'MERCHANT' && (
               <div className="mx-3 mb-6">
                 <div className="p-4 bg-white rounded-lg shadow-md border border-gray-100">
                   <div className="flex items-center gap-3">

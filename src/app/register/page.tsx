@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { EyeIcon, EyeSlashIcon, CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import Button from '@/components/Button';
 import { useMutation } from '@tanstack/react-query';
-import authService, { RegisterData } from '@/api/services/authService';
+import { authService, RegisterData } from '@/api/services/authService';
 
 export default function Register() {
   const router = useRouter();
@@ -74,7 +74,10 @@ export default function Register() {
     },
     onError: (error: any) => {
       console.error('Registration error:', error);
-      setServerError(error.message || 'Произошла ошибка при регистрации');
+      
+      // Используем сообщение об ошибке, которое уже обработал axiosClient
+      const errorMessage = error.message || 'Произошла ошибка при регистрации';
+      setServerError(errorMessage);
     }
   });
 
