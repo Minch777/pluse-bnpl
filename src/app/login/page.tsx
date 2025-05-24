@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/Button';
 import Link from 'next/link';
@@ -15,34 +15,6 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
-
-  // Проверяем, вошел ли пользователь уже
-  useEffect(() => {
-    if (authService.isAuthenticated()) {
-      // Если уже авторизован, перенаправляем на dashboard
-      const redirectUrl = authService.getRedirectUrl();
-      if (redirectUrl) {
-        router.push(redirectUrl);
-      } else {
-        // Дефолтный редирект - проверяем роль из токена
-        try {
-          const token = localStorage.getItem('token');
-          if (token) {
-            // Это упрощенный пример, в реальности роль должна определяться на сервере
-            const tokenData = JSON.parse(atob(token.split('.')[1]));
-            if (tokenData.role === 'ADMIN') {
-              router.push('/admin/dashboard');
-            } else {
-              router.push('/merchant/dashboard');
-            }
-          }
-        } catch (e) {
-          console.error('Error parsing token:', e);
-          router.push('/merchant/dashboard');
-        }
-      }
-    }
-  }, [router]);
 
   // Используем React Query для мутации входа
   const loginMutation = useMutation({
@@ -73,32 +45,6 @@ export default function LoginPage() {
     
     // Выполняем запрос через React Query
     loginMutation.mutate({ email, password });
-  };
-
-  // Тестовый логин для разработки
-  const handleDevLogin = () => {
-    // Эмулируем ответ сервера для тестирования
-    const testResponse = {
-      token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyMzQ1Njc4OTAiLCJuYW1lIjoiVGVzdCBVc2VyIiwicm9sZSI6Im1lcmNoYW50In0.7bHQI2CmTCgQuV3PJeVgGlsafKH5hEtO-3o4NZP5bh0',
-      role: 'merchant',
-      user: {
-        id: '123456790',
-        email: 'test@example.com',
-        role: 'merchant'
-      }
-    };
-    
-    // Сохраняем токен, как если бы была успешная авторизация
-    localStorage.setItem('token', testResponse.token);
-    console.log('Test token saved:', testResponse.token);
-    
-    // Перенаправляем на сохраненный URL или дашборд
-    const redirectUrl = authService.getRedirectUrl();
-    if (redirectUrl) {
-      router.push(redirectUrl);
-    } else {
-      router.push('/merchant/dashboard');
-    }
   };
 
   return (
@@ -217,16 +163,6 @@ export default function LoginPage() {
               <span>Войти</span>
               {!loginMutation.isPending && <ArrowRightIcon className="ml-2 h-5 w-5" />}
             </Button>
-            
-            {process.env.NODE_ENV === 'development' && (
-              <button
-                type="button"
-                onClick={handleDevLogin}
-                className="w-full py-3 text-base font-medium rounded-lg border border-sky-600 text-sky-600 hover:bg-sky-50 mt-2"
-              >
-                Тестовый вход (только для разработки)
-              </button>
-            )}
             
             <div className="text-center mt-4">
               <p className="text-sm text-slate-600">

@@ -306,7 +306,7 @@ function ApplicationModal({
       return <StatusBadge status={status as ApplicationStatus} size="md" />;
     }
     return (
-      <span className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
+      <span className="inline-flex items-center px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm font-medium">
         {status}
       </span>
     );
@@ -327,19 +327,18 @@ function ApplicationModal({
           <div className="px-6 py-5 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-sky-50 rounded-lg">
-                  <DocumentTextIcon className="h-6 w-6 text-sky-600" />
-                </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900">Заявка #{application.shortId}</h2>
-                  <p className="text-gray-600 text-sm">Детальная информация</p>
+                  <h2 className="text-xl font-semibold text-slate-800">Заявка #{application.shortId}</h2>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-sm text-slate-500">Статус:</span>
+                    {getStatusDisplay(application.status)}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                {getStatusDisplay(application.status)}
                 <button 
                   onClick={onClose} 
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors rounded-lg"
+                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors rounded-lg"
                 >
                   <XMarkIcon className="h-5 w-5" />
                 </button>
@@ -353,81 +352,79 @@ function ApplicationModal({
               {/* Amount */}
               <div className="bg-sky-50 border border-sky-100 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <CurrencyDollarIcon className="h-5 w-5 text-sky-600" />
+                  <BanknotesIcon className="h-5 w-5 text-sky-600" />
                   <span className="text-sm font-medium text-sky-700">Сумма</span>
                 </div>
-                <p className="text-xl font-semibold text-gray-900">{formatAmount(application.amount)}</p>
+                <p className="text-xl font-semibold text-slate-800">{formatAmount(application.amount)}</p>
               </div>
 
               {/* Type */}
               <div className="bg-sky-50 border border-sky-100 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <DocumentIcon className="h-5 w-5 text-sky-600" />
+                  <DocumentTextIcon className="h-5 w-5 text-sky-600" />
                   <span className="text-sm font-medium text-sky-700">Тип</span>
                 </div>
-                <p className="text-lg font-medium text-gray-900">{getLoanTypeText(application.loanType || application.type || '')}</p>
+                <p className="text-lg font-medium text-slate-800">{getLoanTypeText(application.loanType || application.type || '')}</p>
               </div>
 
               {/* Term */}
               <div className="bg-sky-50 border border-sky-100 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <CalendarDaysIcon className="h-5 w-5 text-sky-600" />
+                  <ClockIcon className="h-5 w-5 text-sky-600" />
                   <span className="text-sm font-medium text-sky-700">Срок</span>
                 </div>
-                <p className="text-lg font-medium text-gray-900">{application.term} мес.</p>
+                <p className="text-lg font-medium text-slate-800">{application.term} мес.</p>
               </div>
             </div>
 
             {/* Client information */}
             <div className="bg-white border border-gray-200 rounded-lg p-6">
               <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Данные клиента</h3>
+                <h3 className="text-lg font-semibold text-slate-800">Данные клиента</h3>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Personal info */}
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                    <label className="block text-sm font-medium text-slate-500 tracking-wider mb-1">
                       Фамилия
                     </label>
-                    <p className="text-gray-900 font-medium">{application.lastName || 'Не указано'}</p>
+                    <p className="text-slate-800 font-medium">{application.lastName || 'Не указано'}</p>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                    <label className="block text-sm font-medium text-slate-500 tracking-wider mb-1">
                       Имя
                     </label>
-                    <p className="text-gray-900 font-medium">{application.firstName || 'Не указано'}</p>
+                    <p className="text-slate-800 font-medium">{application.firstName || 'Не указано'}</p>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                    <label className="block text-sm font-medium text-slate-500 tracking-wider mb-1">
                       Отчество
                     </label>
-                    <p className="text-gray-900 font-medium">{application.middleName || 'Не указано'}</p>
+                    <p className="text-slate-800 font-medium">{application.middleName || 'Не указано'}</p>
                   </div>
                 </div>
 
                 {/* Contact info */}
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1">
-                      <IdentificationIcon className="h-3 w-3" />
+                    <label className="block text-sm font-medium text-slate-500 tracking-wider mb-1">
                       ИИН
                     </label>
-                    <p className="text-gray-900 font-mono font-medium">{application.iin || 'Не указано'}</p>
+                    <p className="text-slate-800 font-mono font-medium">{application.iin || 'Не указано'}</p>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1">
-                      <PhoneIcon className="h-3 w-3" />
+                    <label className="block text-sm font-medium text-slate-500 tracking-wider mb-1">
                       Телефон
                     </label>
-                    <p className="text-gray-900 font-medium">{application.phone || 'Не указано'}</p>
+                    <p className="text-slate-800 font-medium">{application.phone || 'Не указано'}</p>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                    <label className="block text-sm font-medium text-slate-500 tracking-wider mb-1">
                       Дата создания
                     </label>
-                    <p className="text-gray-900 font-medium">
+                    <p className="text-slate-800 font-medium">
                       {new Date(application.createdAt).toLocaleDateString('ru-RU', {
                         year: 'numeric',
                         month: 'long',
@@ -439,26 +436,6 @@ function ApplicationModal({
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-full sm:w-auto px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-              >
-                Закрыть
-              </button>
-              <a
-                href={`/public/application/${application.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-sky-600 border border-sky-600 rounded-lg hover:bg-sky-700 hover:border-sky-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-              >
-                <LinkIcon className="h-4 w-4" />
-                Перейти к заявке
-              </a>
             </div>
           </div>
         </div>
@@ -684,18 +661,11 @@ export default function MerchantDashboard() {
   };
 
   const getStatusDisplay = (status: string) => {
-    // Добавляем логирование для отладки
-    console.log('Status received:', status, 'Type:', typeof status);
-    console.log('Status in statusMappings?', status in statusMappings);
-    console.log('Available statusMappings keys:', Object.keys(statusMappings));
-    
-    // Проверяем, есть ли такой статус в statusMappings
     if (status in statusMappings) {
-      return <StatusBadge status={status as ApplicationStatus} size="sm" />;
+      return <StatusBadge status={status as ApplicationStatus} size="md" />;
     }
-    // Если статус неизвестен — показываем его текстом
     return (
-      <span className="inline-block px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">
+      <span className="inline-flex items-center px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm font-medium">
         {status}
       </span>
     );

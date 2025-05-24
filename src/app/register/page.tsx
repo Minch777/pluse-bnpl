@@ -13,14 +13,14 @@ export default function Register() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     companyName: '',
-    ownerFullName: '',
+    bin: '', // Бизнес идентификационный номер
+    directorName: '',
+    website: '',
     email: '',
     phone: '',
     password: '',
     confirmPassword: '',
-    city: '',
     address: '',
-    bin: '', // Бизнес идентификационный номер
     agreeToTerms: false
   });
 
@@ -33,14 +33,47 @@ export default function Register() {
   const registerMutation = useMutation({
     mutationFn: (data: RegisterData) => authService.register(data),
     onSuccess: (data) => {
+      console.log('Registration successful, response:', data);
+      
+      // Проверяем структуру ответа (может быть data.data или data напрямую)
+      const responseData = data.data || data;
+      
+      console.log('Processing registration response:', {
+        hasData: !!data.data,
+        responseData: responseData,
+        hasToken: !!(responseData.token || responseData.accessToken),
+      });
+      
       // Сохраняем токен, если он есть в ответе
-      if (data.token) {
-        localStorage.setItem('token', data.token);
+      const responseToken = responseData.token || responseData.accessToken;
+      
+      if (responseToken) {
+        // Убедимся, что токен имеет префикс Bearer, если нет - добавим его
+        const tokenToStore = responseToken.startsWith('Bearer ') 
+          ? responseToken 
+          : `Bearer ${responseToken}`;
+        
+        localStorage.setItem('token', tokenToStore);
+        console.log('Registration: Token saved to localStorage:', tokenToStore.slice(0, 20) + '...');
+        
+        // Проверка сохранения
+        const savedToken = localStorage.getItem('token');
+        console.log('Registration: Verification - token from localStorage:', savedToken ? `${savedToken.slice(0, 20)}...` : 'No token found');
+        
+        // Даём время для сохранения токена, затем редиректим
+        setTimeout(() => {
+          console.log('Registration: Redirecting to merchant dashboard...');
+          // Используем replace чтобы не оставлять регистрацию в истории
+          router.replace('/merchant/dashboard');
+        }, 100);
+      } else {
+        console.warn('Registration successful but no token received from server');
+        // Если токена нет, остаёмся на странице регистрации и показываем ошибку
+        setServerError('Регистрация прошла успешно, но токен не получен. Попробуйте войти в систему.');
       }
-      // Перенаправляем на дашборд
-      router.push('/merchant/dashboard');
     },
     onError: (error: any) => {
+      console.error('Registration error:', error);
       setServerError(error.message || 'Произошла ошибка при регистрации');
     }
   });
@@ -65,14 +98,13 @@ export default function Register() {
     const newErrors: Record<string, string> = {};
 
     if (!formData.companyName.trim()) newErrors.companyName = 'Введите название компании';
-    if (!formData.ownerFullName.trim()) newErrors.ownerFullName = 'Введите ФИО владельца';
+    if (!formData.directorName.trim()) newErrors.directorName = 'Введите ФИО руководителя';
     if (!formData.email.trim()) newErrors.email = 'Введите email';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Введите корректный email';
     if (!formData.phone.trim()) newErrors.phone = 'Введите номер телефона';
     if (!formData.password) newErrors.password = 'Введите пароль';
     else if (formData.password.length < 8) newErrors.password = 'Пароль должен быть не менее 8 символов';
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Пароли не совпадают';
-    if (!formData.city.trim()) newErrors.city = 'Введите город';
     if (!formData.address.trim()) newErrors.address = 'Введите адрес';
     if (!formData.bin.trim()) newErrors.bin = 'Введите БИН';
     else if (formData.bin.length !== 12) newErrors.bin = 'БИН должен содержать 12 цифр';
@@ -94,7 +126,9 @@ export default function Register() {
       companyName: formData.companyName,
       bin: formData.bin,
       phoneNumber: formData.phone,
-      address: formData.address
+      address: formData.address,
+      directorName: formData.directorName,
+      website: formData.website
     };
       
     // Выполняем запрос через React Query
@@ -157,19 +191,20 @@ export default function Register() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  ФИО владельца
+                  БИН
                 </label>
                 <div className="relative">
                 <input
                   type="text"
-                  name="ownerFullName"
-                  value={formData.ownerFullName}
+                  name="bin"
+                  value={formData.bin}
                   onChange={handleChange}
-                    className={`w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 text-slate-900 placeholder-slate-400 transition-all ${errors.ownerFullName ? 'border-red-500 ring-1 ring-red-500' : ''}`}
-                  placeholder="Иванов Иван Иванович"
+                    className={`w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 text-slate-900 placeholder-slate-400 transition-all ${errors.bin ? 'border-red-500 ring-1 ring-red-500' : ''}`}
+                  placeholder="12 цифр"
+                  maxLength={12}
                 />
                 </div>
-                {errors.ownerFullName && <p className="mt-1 text-sm text-red-500">{errors.ownerFullName}</p>}
+                {errors.bin && <p className="mt-1 text-sm text-red-500">{errors.bin}</p>}
               </div>
 
               <div>
@@ -285,37 +320,36 @@ export default function Register() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Город
+                  ФИО руководителя
                 </label>
                 <div className="relative">
                 <input
                   type="text"
-                  name="city"
-                  value={formData.city}
+                  name="directorName"
+                  value={formData.directorName}
                   onChange={handleChange}
-                    className={`w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 text-slate-900 placeholder-slate-400 transition-all ${errors.city ? 'border-red-500 ring-1 ring-red-500' : ''}`}
-                  placeholder="Алматы"
+                    className={`w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 text-slate-900 placeholder-slate-400 transition-all ${errors.directorName ? 'border-red-500 ring-1 ring-red-500' : ''}`}
+                  placeholder="Иванов Иван Иванович"
                 />
                 </div>
-                {errors.city && <p className="mt-1 text-sm text-red-500">{errors.city}</p>}
+                {errors.directorName && <p className="mt-1 text-sm text-red-500">{errors.directorName}</p>}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  БИН
+                  Сайт
                 </label>
                 <div className="relative">
                 <input
                   type="text"
-                  name="bin"
-                  value={formData.bin}
+                  name="website"
+                  value={formData.website}
                   onChange={handleChange}
-                    className={`w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 text-slate-900 placeholder-slate-400 transition-all ${errors.bin ? 'border-red-500 ring-1 ring-red-500' : ''}`}
-                  placeholder="12 цифр"
-                  maxLength={12}
+                    className={`w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 text-slate-900 placeholder-slate-400 transition-all ${errors.website ? 'border-red-500 ring-1 ring-red-500' : ''}`}
+                  placeholder="https://example.com"
                 />
                 </div>
-                {errors.bin && <p className="mt-1 text-sm text-red-500">{errors.bin}</p>}
+                {errors.website && <p className="mt-1 text-sm text-red-500">{errors.website}</p>}
               </div>
             </div>
 

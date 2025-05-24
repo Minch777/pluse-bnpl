@@ -8,6 +8,8 @@ export interface RegisterData {
   bin: string;
   phoneNumber: string;
   address: string;
+  directorName: string;
+  website?: string; // Optional field since it's not required in validation
 }
 
 export interface LoginData {
@@ -51,19 +53,27 @@ const authService = {
     try {
       const response = await axiosClient.post<LoginResponse>('/auth/login', data);
       
+      console.log('Full response:', response);
+      console.log('Response data:', response.data);
+      
+      // Проверяем структуру ответа
+      const responseData = response.data || response;
+      
       // Подробное логирование
       console.log('Login response received:', {
         success: true,
-        hasToken: !!(response.token || response.accessToken),
-        tokenPreview: response.token ? `${response.token.slice(0, 15)}...` : 
-                     response.accessToken ? `${response.accessToken.slice(0, 15)}...` : 'No token',
-        role: response.role,
-        userId: response.user?.id
+        hasData: !!response.data,
+        responseData: responseData,
+        hasToken: !!(responseData.token || responseData.accessToken),
+        tokenPreview: responseData.token ? `${responseData.token.slice(0, 15)}...` : 
+                     responseData.accessToken ? `${responseData.accessToken.slice(0, 15)}...` : 'No token',
+        role: responseData.role,
+        userId: responseData.user?.id
       });
       
       // Сохраняем токен в localStorage, если он есть в ответе
       // Используем token или accessToken, в зависимости от того, что вернул сервер
-      const responseToken = response.token || response.accessToken;
+      const responseToken = responseData.token || responseData.accessToken;
       
       if (responseToken) {
         // Убедимся, что токен имеет префикс Bearer, если нет - добавим его
@@ -81,7 +91,7 @@ const authService = {
         console.error('Warning: Login successful but no token received from server');
       }
       
-      return response;
+      return responseData;
     } catch (error) {
       console.error('Login error:', error);
       throw error;

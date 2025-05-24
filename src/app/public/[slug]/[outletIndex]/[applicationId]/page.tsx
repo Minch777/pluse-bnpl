@@ -98,7 +98,7 @@ export default function ApplicationPage({
   const [formData, setFormData] = useState<FormData>({
     loanType: 'installment',
     term: 3,
-    amount: 10000,
+    amount: 15000,
     iin: '',
     lastName: '',
     firstName: '',
@@ -175,7 +175,7 @@ export default function ApplicationPage({
           ...prevFormData,
           loanType: loanType,
           term: data.term || 3,
-          amount: data.amount || 10000,
+          amount: data.amount || 15000,
           // Don't pre-populate step 2 fields - users should enter these from scratch
           iin: '',
           lastName: '',
@@ -628,8 +628,8 @@ export default function ApplicationPage({
       case 1: // Product selection
         if (formData.amount === '') {
           newErrors.amount = 'Сумма должна быть указана';
-        } else if (typeof formData.amount === 'number' && formData.amount < 10000) {
-          newErrors.amount = 'Сумма должна быть не менее 10 000 ₸';
+        } else if (typeof formData.amount === 'number' && formData.amount < 15000) {
+          newErrors.amount = 'Сумма должна быть не менее 15 000 ₸';
         } else if (typeof formData.amount === 'number' && formData.amount > 3000000) {
           newErrors.amount = 'Сумма не должна превышать 3 000 000 ₸';
         }
@@ -667,8 +667,8 @@ export default function ApplicationPage({
       case 1: // Product selection
         if (formData.amount === '') {
           newErrors.amount = 'Сумма должна быть указана';
-        } else if (typeof formData.amount === 'number' && formData.amount < 10000) {
-          newErrors.amount = 'Сумма должна быть не менее 10 000 ₸';
+        } else if (typeof formData.amount === 'number' && formData.amount < 15000) {
+          newErrors.amount = 'Сумма должна быть не менее 15 000 ₸';
         } else if (typeof formData.amount === 'number' && formData.amount > 3000000) {
           newErrors.amount = 'Сумма не должна превышать 3 000 000 ₸';
         }
@@ -1171,16 +1171,16 @@ export default function ApplicationPage({
             <input
               type="range"
               id="amount-slider"
-              min={10000}
+              min={15000}
               max={3000000}
               step={10000}
-              value={formData.amount || 10000}
+              value={formData.amount || 15000}
               onChange={(e) => handleChange('amount', Number(e.target.value))}
               className="w-full h-2 appearance-none bg-slate-200 rounded-full outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-sky-600"
             />
             
             <div className="flex justify-between text-xs text-slate-400 mt-2">
-              <span>10 000 ₸</span>
+              <span>15 000 ₸</span>
               <span>3 000 000 ₸</span>
             </div>
           </div>

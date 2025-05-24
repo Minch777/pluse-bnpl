@@ -37,16 +37,26 @@ export default function MerchantLayout({
   useEffect(() => {
     const checkAuth = () => {
       try {
+        console.log('MerchantLayout: Checking authentication... timestamp:', new Date().toISOString());
         // Проверяем наличие токена
         const token = localStorage.getItem('token');
         
+        console.log('MerchantLayout: Token check result:', {
+          hasToken: !!token,
+          tokenPreview: token ? `${token.slice(0, 30)}...` : 'No token found',
+          tokenLength: token ? token.length : 0,
+          currentPath: window.location.pathname
+        });
+        
         if (!token) {
-          console.log('No token found, redirecting to login');
+          console.log('MerchantLayout: No token found, redirecting to login');
           localStorage.setItem('redirectAfterLogin', window.location.pathname);
           // Используем window.location.href для более надежного перенаправления
           window.location.href = '/login';
           return;
         }
+        
+        console.log('MerchantLayout: Token found, user is authenticated');
         
         // Проверяем валидность JWT токена (если это JWT)
         if (token.includes('.')) {
@@ -54,33 +64,42 @@ export default function MerchantLayout({
             // Извлекаем payload из JWT
             const payload = JSON.parse(atob(token.split('.')[1]));
             
+            console.log('MerchantLayout: JWT payload:', payload);
+            
             // Проверяем срок действия токена если есть поле exp
             if (payload.exp) {
               const currentTime = Math.floor(Date.now() / 1000);
               if (payload.exp < currentTime) {
-                console.log('Token expired, redirecting to login');
+                console.log('MerchantLayout: Token expired, redirecting to login');
                 localStorage.removeItem('token');
                 localStorage.setItem('redirectAfterLogin', window.location.pathname);
                 window.location.href = '/login';
                 return;
               }
             }
+            
+            console.log('MerchantLayout: JWT token is valid');
           } catch (e) {
-            console.error('Error parsing JWT token:', e);
+            console.error('MerchantLayout: Error parsing JWT token:', e);
+            console.log('MerchantLayout: Token content:', token);
             localStorage.removeItem('token');
             localStorage.setItem('redirectAfterLogin', window.location.pathname);
             window.location.href = '/login';
             return;
           }
+        } else {
+          console.log('MerchantLayout: Token is not JWT format, treating as valid');
         }
+        
+        console.log('MerchantLayout: Authentication check passed successfully');
       } catch (error) {
-        console.error('Auth check error:', error);
+        console.error('MerchantLayout: Auth check error:', error);
         window.location.href = '/login';
       }
     };
     
-    // Добавляем небольшую задержку для выполнения проверки после полной загрузки страницы
-    const timer = setTimeout(checkAuth, 500);
+    // Убираем задержку - проверяем сразу
+    checkAuth();
     
     // Слушаем событие хранилища для повторной проверки при изменении токена
     const handleStorageChange = (e: StorageEvent) => {
@@ -92,7 +111,6 @@ export default function MerchantLayout({
     window.addEventListener('storage', handleStorageChange);
     
     return () => {
-      clearTimeout(timer);
       window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
